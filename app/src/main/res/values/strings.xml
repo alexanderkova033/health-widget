@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">HealthWidget</string>
+
+    <string name="channel_nudge_name">Wellness tips</string>
+    <string name="channel_nudge_description">Occasional micro-tip reminders throughout the day.</string>
+    <string name="channel_sleep_name">Sleep reminder</string>
+    <string name="channel_sleep_description">A single reminder around bedtime to consider winding down.</string>
 </resources>
