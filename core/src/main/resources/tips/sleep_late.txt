@@ -1,0 +1,3 @@
+# Single fixed message shown 23:00-23:59. Not a rotating pool, so it is
+# exempt from the anti-repeat rule by design (see TipEngine.messageFor).
+It's past 11 PM. A consistent, earlier bedtime supports mood and focus tomorrow.

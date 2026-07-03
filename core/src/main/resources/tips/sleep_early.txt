@@ -1,0 +1,3 @@
+# Single fixed message shown 00:00-05:59. Not a rotating pool, so it is
+# exempt from the anti-repeat rule by design (see TipEngine.messageFor).
+It's the middle of the night. If you can, put the phone down and get some rest.
