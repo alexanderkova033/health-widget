@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Pre-Android-12 (API < 31) backup rules. Only local, non-sensitive UI preferences
+     (notification frequency, quiet hours) are ever stored, so full backup is safe. -->
+<full-backup-content>
+    <include domain="sharedpref" path="." />
+</full-backup-content>
