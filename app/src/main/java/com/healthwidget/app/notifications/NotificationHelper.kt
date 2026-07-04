@@ -64,7 +64,13 @@ object NotificationHelper {
         notificationId: Int,
         text: String,
     ) {
-        if (!hasNotificationPermission(context)) return
+        // Checked inline (rather than via a wrapper function) so lint's MissingPermission
+        // data-flow check can recognize the guard on the notify() call below.
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
 
         val contentIntent =
             PendingIntent.getActivity(
@@ -87,8 +93,4 @@ object NotificationHelper {
 
         NotificationManagerCompat.from(context).notify(notificationId, notification)
     }
-
-    private fun hasNotificationPermission(context: Context): Boolean =
-        ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
-            PackageManager.PERMISSION_GRANTED
 }

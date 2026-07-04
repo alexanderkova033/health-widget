@@ -1,13 +1,13 @@
 package com.healthwidget.core
 
 import com.google.common.truth.Truth.assertThat
-import java.time.LocalTime
-import java.util.stream.Stream
-import kotlin.random.Random
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
+import java.time.LocalTime
+import java.util.stream.Stream
+import kotlin.random.Random
 
 /** Deterministic [Random] stand-in: every `nextInt(until)` call returns the same fixed index. */
 private class FixedIndexRandom(private val index: Int) : Random() {

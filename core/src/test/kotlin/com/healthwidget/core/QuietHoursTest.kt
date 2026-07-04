@@ -1,12 +1,12 @@
 package com.healthwidget.core
 
 import com.google.common.truth.Truth.assertThat
-import java.time.LocalTime
-import java.util.stream.Stream
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
+import java.time.LocalTime
+import java.util.stream.Stream
 
 class QuietHoursTest {
     @ParameterizedTest(name = "{0} within [{1}, {2}) -> {3}")

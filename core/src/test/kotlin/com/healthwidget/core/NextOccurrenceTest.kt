@@ -1,9 +1,9 @@
 package com.healthwidget.core
 
 import com.google.common.truth.Truth.assertThat
+import org.junit.jupiter.api.Test
 import java.time.Duration
 import java.time.LocalTime
-import org.junit.jupiter.api.Test
 
 class NextOccurrenceTest {
     @Test

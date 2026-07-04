@@ -11,8 +11,8 @@ import com.healthwidget.app.HealthWidgetApp
 import com.healthwidget.app.data.AppSettings
 import com.healthwidget.core.QuietHours
 import com.healthwidget.core.durationUntilNext
-import java.time.LocalTime
 import kotlinx.coroutines.flow.first
+import java.time.LocalTime
 
 /**
  * Fires once for a single daily nudge "slot" (see [NudgeScheduler]), then reschedules itself

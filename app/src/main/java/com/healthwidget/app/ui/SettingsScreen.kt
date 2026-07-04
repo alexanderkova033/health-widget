@@ -45,9 +45,9 @@ import com.healthwidget.app.R
 import com.healthwidget.app.data.AppSettings
 import com.healthwidget.app.data.SettingsRepository
 import com.healthwidget.app.notifications.NudgeScheduler
-import java.time.LocalTime
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import java.time.LocalTime
 
 @Composable
 fun SettingsScreen(
@@ -96,7 +96,9 @@ fun SettingsScreen(
         Spacer(Modifier.height(24.dp))
 
         if (needsNotificationPermission(settings, notificationsGranted)) {
-            NotificationPermissionCard(onAllowClick = { permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) })
+            NotificationPermissionCard(
+                onAllowClick = { permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) },
+            )
             Spacer(Modifier.height(24.dp))
         }
 

@@ -1,11 +1,12 @@
 package com.healthwidget.app.widget
 
 import android.content.Context
+import androidx.glance.appwidget.updateAll
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.healthwidget.app.HealthWidgetApp
-import java.time.LocalTime
 import kotlinx.coroutines.flow.first
+import java.time.LocalTime
 
 /**
  * Advances the widget's tip on a schedule (FR1: at least every 2 hours) by picking a new

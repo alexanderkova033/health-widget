@@ -1,11 +1,14 @@
 package com.healthwidget.app.widget
 
 import android.content.Context
+import android.content.Intent
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
+import androidx.glance.GlanceTheme
+import androidx.glance.LocalContext
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.action.actionStartActivity
@@ -16,14 +19,13 @@ import androidx.glance.layout.Box
 import androidx.glance.layout.Column
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.padding
-import androidx.glance.material3.GlanceTheme
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import com.healthwidget.app.HealthWidgetApp
 import com.healthwidget.app.ui.MainActivity
-import java.time.LocalTime
 import kotlinx.coroutines.flow.first
+import java.time.LocalTime
 
 /**
  * FR1: shows the current tip, tapping opens the settings screen. [WidgetRefreshWorker] is
@@ -54,12 +56,16 @@ class TipWidget : GlanceAppWidget() {
 
 @Composable
 private fun TipWidgetContent(tip: String) {
+    // Glance has its own LocalContext (androidx.glance), distinct from Compose UI's — this
+    // version of glance-appwidget's actionStartActivity only takes an Intent, there's no
+    // reified actionStartActivity<Activity>() convenience overload.
+    val context = LocalContext.current
     Box(
         modifier =
             GlanceModifier
                 .fillMaxSize()
                 .background(GlanceTheme.colors.surface)
-                .clickable(actionStartActivity<MainActivity>())
+                .clickable(actionStartActivity(Intent(context, MainActivity::class.java)))
                 .padding(16.dp),
         contentAlignment = Alignment.Center,
     ) {

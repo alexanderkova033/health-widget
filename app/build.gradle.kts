@@ -68,8 +68,10 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     debugImplementation(libs.androidx.compose.ui.tooling)
 
+    // GlanceTheme itself lives in androidx.glance (transitively via glance-appwidget); the
+    // separate glance-material3 artifact only adds a ColorProviders(ColorScheme) bridge this
+    // app doesn't use, so it isn't included.
     implementation(libs.androidx.glance.appwidget)
-    implementation(libs.androidx.glance.material3)
 
     implementation(libs.androidx.work.runtime.ktx)
 
