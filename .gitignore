@@ -10,6 +10,11 @@ build/
 # Local configuration
 local.properties
 
+# Release signing secrets — never commit these
+keystore/*.jks
+keystore/*.keystore
+keystore/keystore.properties
+
 # Android
 *.apk
 *.aab
