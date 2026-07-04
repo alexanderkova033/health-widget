@@ -8,4 +8,30 @@
     <string name="channel_sleep_description">A single reminder around bedtime to consider winding down.</string>
 
     <string name="widget_description">Shows one rotating wellness micro-tip. Tap to open settings.</string>
+
+    <string name="settings_title">HealthWidget</string>
+
+    <string name="settings_frequency_title">Nudge frequency</string>
+    <string name="settings_frequency_description">How many gentle reminders would you like per day?</string>
+    <string name="settings_frequency_off">Off</string>
+    <string name="settings_frequency_one">1 time a day</string>
+    <string name="settings_frequency_two">2 times a day</string>
+    <string name="settings_frequency_three">3 times a day</string>
+
+    <string name="settings_sleep_alert_title">Sleep alert</string>
+    <string name="settings_sleep_alert_description">One reminder at 23:00 to consider winding down for bed.</string>
+
+    <string name="settings_quiet_hours_title">Quiet hours</string>
+    <string name="settings_quiet_hours_description">No nudge notifications will be sent during this window. The sleep alert is exempt.</string>
+    <string name="settings_quiet_hours_start">Starts</string>
+    <string name="settings_quiet_hours_end">Ends</string>
+
+    <string name="settings_notification_permission_rationale">Allow notifications so nudges and the sleep alert can actually appear.</string>
+    <string name="settings_notification_permission_action">Allow</string>
+
+    <string name="settings_about_title">About</string>
+    <string name="settings_about_privacy_promise">HealthWidget works 100%% offline. No accounts, no analytics, no ads, and nothing ever leaves your device — not even anonymized data. All settings and tip history stay in local storage only.</string>
+
+    <string name="action_ok">OK</string>
+    <string name="action_cancel">Cancel</string>
 </resources>
