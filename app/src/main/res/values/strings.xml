@@ -6,4 +6,6 @@
     <string name="channel_nudge_description">Occasional micro-tip reminders throughout the day.</string>
     <string name="channel_sleep_name">Sleep reminder</string>
     <string name="channel_sleep_description">A single reminder around bedtime to consider winding down.</string>
+
+    <string name="widget_description">Shows one rotating wellness micro-tip. Tap to open settings.</string>
 </resources>
