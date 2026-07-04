@@ -11,7 +11,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import com.healthwidget.app.R
-import com.healthwidget.app.ui.MainActivity
+import com.healthwidget.app.settings.presentation.SettingsActivity
 
 /**
  * All notification plumbing in one place: channel setup and posting. Every post is gated on
@@ -76,7 +76,7 @@ object NotificationHelper {
             PendingIntent.getActivity(
                 context,
                 notificationId,
-                Intent(context, MainActivity::class.java),
+                Intent(context, SettingsActivity::class.java),
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
             )
 

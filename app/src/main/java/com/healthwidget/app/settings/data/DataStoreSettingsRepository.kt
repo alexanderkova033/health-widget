@@ -1,4 +1,4 @@
-package com.healthwidget.app.data
+package com.healthwidget.app.settings.data
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
@@ -6,18 +6,21 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import com.healthwidget.core.settings.AppSettings
+import com.healthwidget.core.settings.SettingsRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import java.time.LocalTime
 
 /**
- * Depends on [DataStore] rather than [android.content.Context] so it can be unit-tested on
- * the plain JVM with an in-memory-backed DataStore, with no Robolectric/Android dependency.
+ * [SettingsRepository] backed by Jetpack DataStore. Depends on [DataStore] rather than
+ * [android.content.Context] so it can be unit-tested on the plain JVM with an
+ * in-memory-backed DataStore, with no Robolectric/Android dependency.
  */
-class SettingsRepository(private val dataStore: DataStore<Preferences>) {
-    val settings: Flow<AppSettings> = dataStore.data.map { it.toAppSettings() }
+class DataStoreSettingsRepository(private val dataStore: DataStore<Preferences>) : SettingsRepository {
+    override val settings: Flow<AppSettings> = dataStore.data.map { it.toAppSettings() }
 
-    suspend fun setNotificationFrequency(frequency: Int) {
+    override suspend fun setNotificationFrequency(frequency: Int) {
         require(frequency in AppSettings.MIN_NOTIFICATION_FREQUENCY..AppSettings.MAX_NOTIFICATION_FREQUENCY) {
             "notificationFrequency must be in " +
                 "${AppSettings.MIN_NOTIFICATION_FREQUENCY}..${AppSettings.MAX_NOTIFICATION_FREQUENCY}, was $frequency"
@@ -25,11 +28,11 @@ class SettingsRepository(private val dataStore: DataStore<Preferences>) {
         dataStore.edit { it[Keys.NOTIFICATION_FREQUENCY] = frequency }
     }
 
-    suspend fun setSleepAlertEnabled(enabled: Boolean) {
+    override suspend fun setSleepAlertEnabled(enabled: Boolean) {
         dataStore.edit { it[Keys.SLEEP_ALERT_ENABLED] = enabled }
     }
 
-    suspend fun setQuietHours(
+    override suspend fun setQuietHours(
         start: LocalTime,
         end: LocalTime,
     ) {

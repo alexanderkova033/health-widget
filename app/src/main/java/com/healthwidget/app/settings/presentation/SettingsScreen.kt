@@ -1,4 +1,4 @@
-package com.healthwidget.app.ui
+package com.healthwidget.app.settings.presentation
 
 import android.Manifest
 import android.content.Context
@@ -42,9 +42,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.core.content.ContextCompat
 import com.healthwidget.app.R
-import com.healthwidget.app.data.AppSettings
-import com.healthwidget.app.data.SettingsRepository
 import com.healthwidget.app.notifications.NudgeScheduler
+import com.healthwidget.core.settings.AppSettings
+import com.healthwidget.core.settings.SettingsRepository
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.time.LocalTime

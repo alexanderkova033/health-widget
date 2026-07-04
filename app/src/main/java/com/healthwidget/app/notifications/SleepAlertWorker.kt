@@ -7,7 +7,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.healthwidget.app.HealthWidgetApp
-import com.healthwidget.core.durationUntilNext
+import com.healthwidget.core.scheduling.durationUntilNext
 import kotlinx.coroutines.flow.first
 
 /**

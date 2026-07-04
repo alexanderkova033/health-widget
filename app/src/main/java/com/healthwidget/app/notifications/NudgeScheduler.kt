@@ -5,8 +5,8 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
-import com.healthwidget.app.data.AppSettings
-import com.healthwidget.core.durationUntilNext
+import com.healthwidget.core.scheduling.durationUntilNext
+import com.healthwidget.core.settings.AppSettings
 import java.time.LocalTime
 
 /**

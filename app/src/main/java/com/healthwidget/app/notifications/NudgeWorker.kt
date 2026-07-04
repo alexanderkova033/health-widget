@@ -8,9 +8,9 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.healthwidget.app.HealthWidgetApp
-import com.healthwidget.app.data.AppSettings
-import com.healthwidget.core.QuietHours
-import com.healthwidget.core.durationUntilNext
+import com.healthwidget.core.scheduling.QuietHours
+import com.healthwidget.core.scheduling.durationUntilNext
+import com.healthwidget.core.settings.AppSettings
 import kotlinx.coroutines.flow.first
 import java.time.LocalTime
 
@@ -31,9 +31,7 @@ class NudgeWorker(
         val now = LocalTime.now()
 
         if (!QuietHours.isWithin(now, settings.quietHoursStart, settings.quietHoursEnd)) {
-            val lastTip = container.tipHistoryRepository.lastTip.first()
-            val tip = container.tipEngine.messageFor(now, lastTip)
-            container.tipHistoryRepository.setLastTip(tip)
+            val tip = container.advanceTip(now)
             NotificationHelper.showNudge(applicationContext, tip)
         }
 

@@ -1,4 +1,4 @@
-package com.healthwidget.core
+package com.healthwidget.core.tips
 
 /**
  * Bundled tip content, grouped by [DayPart]. Loaded from plain-text resources (one tip per

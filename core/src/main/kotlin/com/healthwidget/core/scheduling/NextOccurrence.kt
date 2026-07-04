@@ -1,4 +1,4 @@
-package com.healthwidget.core
+package com.healthwidget.core.scheduling
 
 import java.time.Duration
 import java.time.LocalTime

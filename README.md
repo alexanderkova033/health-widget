@@ -40,28 +40,52 @@ form of tracking.
 
 ## Architecture
 
-Two Gradle modules:
+Two Gradle modules, folders organized by feature (screaming architecture) with each
+feature split into `data`/`presentation` layers that depend inward on `:core` (clean
+architecture) rather than on each other's concrete classes:
 
-- **`:core`** — pure Kotlin, JVM-only, zero Android imports. `TipEngine`, `TipCatalog`,
-  `QuietHours`, and `durationUntilNext` live here so they're trivially unit-testable and
-  reusable (e.g. by a future iOS port sharing the same rules, ported line-for-line).
-- **`:app`** — the Android application: DataStore-backed repositories, WorkManager
-  scheduling, the Glance widget, and the Compose settings screen.
+- **`:core`** — the domain layer: pure Kotlin, JVM-only, zero Android imports. Grouped by
+  concept, not by class kind:
+  - `tips/` — `TipEngine`, `TipCatalog`, `TipHistoryRepository` (interface), and
+    `AdvanceTipUseCase`, the one "pick + persist the next tip" rule shared by the widget
+    and both notification workers, so they can't silently diverge on anti-repeat (FR5).
+  - `settings/` — the `AppSettings` model and `SettingsRepository` interface.
+  - `scheduling/` — `QuietHours` and `durationUntilNext`.
+  Everything here is trivially unit-testable and reusable as-is by a future iOS port.
+- **`:app`** — the Android application, organized by feature rather than by technical
+  layer (`settings/`, `tips/`, `notifications/`, `widget/`, `boot/`). `settings/` and
+  `tips/` each have a `data/` sub-package with the DataStore-backed implementation of the
+  matching `:core` interface (`DataStoreSettingsRepository`, `DataStoreTipHistoryRepository`)
+  — dependents (workers, `AppContainer`, the settings screen) hold the `:core` interface
+  type, never the concrete DataStore class, per the Dependency Inversion Principle.
 
 ```mermaid
 graph TD
-    subgraph core["core (pure Kotlin, JVM — no Android imports)"]
-        TipEngine
-        TipCatalog
-        QuietHours
-        NextOccurrence["durationUntilNext"]
+    subgraph core["core (domain layer — pure Kotlin, JVM, zero Android imports)"]
+        subgraph coreTips["tips"]
+            TipEngine
+            TipCatalog
+            TipHistoryRepository["TipHistoryRepository (interface)"]
+            AdvanceTipUseCase
+        end
+        subgraph coreSettings["settings"]
+            AppSettings
+            SettingsRepository["SettingsRepository (interface)"]
+        end
+        subgraph coreScheduling["scheduling"]
+            QuietHours
+            NextOccurrence["durationUntilNext"]
+        end
     end
 
-    subgraph app["app (Android)"]
-        subgraph data["data"]
-            SettingsRepository
-            TipHistoryRepository
-            DataStore[("DataStore<Preferences>")]
+    subgraph app["app (Android — organized by feature, not by layer)"]
+        subgraph settingsFeature["settings"]
+            DataStoreSettingsRepository["data/DataStoreSettingsRepository"]
+            SettingsActivity["presentation/SettingsActivity"]
+            SettingsScreen["presentation/SettingsScreen"]
+        end
+        subgraph tipsFeature["tips"]
+            DataStoreTipHistoryRepository["data/DataStoreTipHistoryRepository"]
         end
         subgraph notif["notifications"]
             NudgeScheduler
@@ -74,21 +98,22 @@ graph TD
             WidgetRefreshWorker
             WidgetScheduler
         end
-        subgraph ui["ui"]
-            MainActivity
-            SettingsScreen
-        end
         BootReceiver
+        DataStore[("DataStore<Preferences>")]
     end
+
+    DataStoreSettingsRepository -.implements.-> SettingsRepository
+    DataStoreTipHistoryRepository -.implements.-> TipHistoryRepository
+    DataStoreSettingsRepository --> DataStore
+    DataStoreTipHistoryRepository --> DataStore
+    AdvanceTipUseCase --> TipEngine
+    AdvanceTipUseCase --> TipHistoryRepository
 
     SettingsScreen --> SettingsRepository
     SettingsScreen --> NudgeScheduler
-    SettingsRepository --> DataStore
-    TipHistoryRepository --> DataStore
 
-    NudgeWorker --> TipEngine
+    NudgeWorker --> AdvanceTipUseCase
     NudgeWorker --> QuietHours
-    NudgeWorker --> TipHistoryRepository
     NudgeWorker --> SettingsRepository
     NudgeWorker --> NotificationHelper
 
@@ -96,10 +121,9 @@ graph TD
     SleepAlertWorker --> SettingsRepository
     SleepAlertWorker --> NotificationHelper
 
-    WidgetRefreshWorker --> TipEngine
-    WidgetRefreshWorker --> TipHistoryRepository
+    WidgetRefreshWorker --> AdvanceTipUseCase
+    TipWidget --> AdvanceTipUseCase
     TipWidget --> TipHistoryRepository
-    TipWidget --> TipEngine
 
     BootReceiver --> NudgeScheduler
     BootReceiver --> WidgetScheduler

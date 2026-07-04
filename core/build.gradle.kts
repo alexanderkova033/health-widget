@@ -11,10 +11,17 @@ kotlin {
 }
 
 dependencies {
+    // Flow is a plain Kotlin/coroutines primitive (no Android dependency), needed here so the
+    // repository interfaces (SettingsRepository, TipHistoryRepository) can be defined in the
+    // domain layer per the Dependency Inversion Principle, with DataStore-backed
+    // implementations living in :app.
+    api(libs.kotlinx.coroutines.core)
+
     testImplementation(libs.junit.jupiter.api)
     testImplementation(libs.junit.jupiter.params)
     testRuntimeOnly(libs.junit.jupiter.engine)
     testImplementation(libs.truth)
+    testImplementation(libs.kotlinx.coroutines.test)
 }
 
 tasks.test {

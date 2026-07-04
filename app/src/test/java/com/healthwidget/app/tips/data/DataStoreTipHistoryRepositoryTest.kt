@@ -1,4 +1,4 @@
-package com.healthwidget.app.data
+package com.healthwidget.app.tips.data
 
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import com.google.common.truth.Truth.assertThat
@@ -9,11 +9,11 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import java.io.File
 
-class TipHistoryRepositoryTest {
+class DataStoreTipHistoryRepositoryTest {
     @TempDir
     lateinit var tempDir: File
 
-    private lateinit var repository: TipHistoryRepository
+    private lateinit var repository: DataStoreTipHistoryRepository
 
     @BeforeEach
     fun setUp() {
@@ -21,7 +21,7 @@ class TipHistoryRepositoryTest {
             PreferenceDataStoreFactory.create(
                 produceFile = { File(tempDir, "tip_history.preferences_pb") },
             )
-        repository = TipHistoryRepository(dataStore)
+        repository = DataStoreTipHistoryRepository(dataStore)
     }
 
     @Test

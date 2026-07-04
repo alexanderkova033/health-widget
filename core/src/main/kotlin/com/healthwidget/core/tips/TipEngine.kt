@@ -1,4 +1,4 @@
-package com.healthwidget.core
+package com.healthwidget.core.tips
 
 import java.time.LocalTime
 import kotlin.random.Random

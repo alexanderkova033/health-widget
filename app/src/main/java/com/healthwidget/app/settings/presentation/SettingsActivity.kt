@@ -1,4 +1,4 @@
-package com.healthwidget.app.ui
+package com.healthwidget.app.settings.presentation
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -7,9 +7,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import com.healthwidget.app.HealthWidgetApp
-import com.healthwidget.app.ui.theme.HealthWidgetTheme
+import com.healthwidget.app.theme.HealthWidgetTheme
 
-class MainActivity : ComponentActivity() {
+class SettingsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val settingsRepository = (application as HealthWidgetApp).container.settingsRepository

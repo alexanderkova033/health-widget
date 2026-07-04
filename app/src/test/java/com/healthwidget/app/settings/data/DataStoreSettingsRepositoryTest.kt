@@ -1,7 +1,8 @@
-package com.healthwidget.app.data
+package com.healthwidget.app.settings.data
 
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import com.google.common.truth.Truth.assertThat
+import com.healthwidget.core.settings.AppSettings
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
@@ -11,11 +12,11 @@ import org.junit.jupiter.api.io.TempDir
 import java.io.File
 import java.time.LocalTime
 
-class SettingsRepositoryTest {
+class DataStoreSettingsRepositoryTest {
     @TempDir
     lateinit var tempDir: File
 
-    private lateinit var repository: SettingsRepository
+    private lateinit var repository: DataStoreSettingsRepository
 
     @BeforeEach
     fun setUp() {
@@ -23,7 +24,7 @@ class SettingsRepositoryTest {
             PreferenceDataStoreFactory.create(
                 produceFile = { File(tempDir, "settings.preferences_pb") },
             )
-        repository = SettingsRepository(dataStore)
+        repository = DataStoreSettingsRepository(dataStore)
     }
 
     @Test

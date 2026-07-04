@@ -1,4 +1,4 @@
-package com.healthwidget.app.data
+package com.healthwidget.app.common
 
 import android.content.Context
 import androidx.datastore.core.DataStore

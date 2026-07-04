@@ -1,4 +1,4 @@
-package com.healthwidget.app.ui.theme
+package com.healthwidget.app.theme
 
 import androidx.compose.ui.graphics.Color
 

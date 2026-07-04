@@ -1,10 +1,11 @@
-package com.healthwidget.app.data
+package com.healthwidget.core.settings
 
 import java.time.LocalTime
 
 /**
- * User-configurable settings (FR6). Everything here lives only in on-device DataStore —
- * nothing is ever transmitted anywhere.
+ * User-configurable settings (FR6): notification frequency, sleep alert toggle, and quiet
+ * hours. A plain domain model — persistence is an implementation detail of whatever
+ * [SettingsRepository] is backing it.
  */
 data class AppSettings(
     val notificationFrequency: Int,

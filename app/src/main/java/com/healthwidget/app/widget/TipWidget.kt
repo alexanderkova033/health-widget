@@ -23,7 +23,7 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import com.healthwidget.app.HealthWidgetApp
-import com.healthwidget.app.ui.MainActivity
+import com.healthwidget.app.settings.presentation.SettingsActivity
 import kotlinx.coroutines.flow.first
 import java.time.LocalTime
 
@@ -41,10 +41,7 @@ class TipWidget : GlanceAppWidget() {
     ) {
         val container = (context.applicationContext as HealthWidgetApp).container
         val existingTip = container.tipHistoryRepository.lastTip.first()
-        val tip =
-            existingTip ?: container.tipEngine.messageFor(LocalTime.now(), lastTip = null).also {
-                container.tipHistoryRepository.setLastTip(it)
-            }
+        val tip = existingTip ?: container.advanceTip(LocalTime.now())
 
         provideContent {
             GlanceTheme {
@@ -65,7 +62,7 @@ private fun TipWidgetContent(tip: String) {
             GlanceModifier
                 .fillMaxSize()
                 .background(GlanceTheme.colors.surface)
-                .clickable(actionStartActivity(Intent(context, MainActivity::class.java)))
+                .clickable(actionStartActivity(Intent(context, SettingsActivity::class.java)))
                 .padding(16.dp),
         contentAlignment = Alignment.Center,
     ) {

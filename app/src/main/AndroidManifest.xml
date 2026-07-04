@@ -23,7 +23,7 @@
         android:theme="@style/Theme.HealthWidget">
 
         <activity
-            android:name=".ui.MainActivity"
+            android:name=".settings.presentation.SettingsActivity"
             android:exported="true"
             android:theme="@style/Theme.HealthWidget">
             <intent-filter>

@@ -5,7 +5,6 @@ import androidx.glance.appwidget.updateAll
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.healthwidget.app.HealthWidgetApp
-import kotlinx.coroutines.flow.first
 import java.time.LocalTime
 
 /**
@@ -22,9 +21,7 @@ class WidgetRefreshWorker(
 ) : CoroutineWorker(appContext, params) {
     override suspend fun doWork(): Result {
         val container = (applicationContext as HealthWidgetApp).container
-        val lastTip = container.tipHistoryRepository.lastTip.first()
-        val tip = container.tipEngine.messageFor(LocalTime.now(), lastTip)
-        container.tipHistoryRepository.setLastTip(tip)
+        container.advanceTip(LocalTime.now())
 
         TipWidget().updateAll(applicationContext)
         return Result.success()
