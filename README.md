@@ -1,6 +1,6 @@
 # HealthWidget
 
-![CI](https://github.com/<owner>/<repo>/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/alexanderkova033/health-widget/actions/workflows/ci.yml/badge.svg)
 
 > `HealthWidget` is a working title used as the package/module name throughout this repo.
 > Three name ideas for before a store listing goes out:
