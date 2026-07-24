@@ -16,8 +16,7 @@ data, usage data, or analytics of any kind.
 The app stores a small amount of data **only on your device**, using Android's local
 DataStore mechanism:
 
-- Your notification frequency, sleep alert toggle, quiet-hours, and widget background style
-  settings.
+- Your widget background style setting.
 - The most recently shown tips (up to the last 30), so the same one doesn't come up again
   too soon.
 
@@ -46,13 +45,12 @@ There is no account system. HealthWidget does not know who you are.
 
 ## Permissions HealthWidget requests, and why
 
-- **Notifications (`POST_NOTIFICATIONS`, Android 13+):** required to show nudge and
-  sleep-alert notifications. You can decline this and still use the home-screen widget.
-- **Receive boot completed:** used only to reschedule your existing notification and
-  widget-refresh preferences after your device restarts.
+- **Receive boot completed:** used only to reschedule the widget's refresh after your device
+  restarts.
 
-HealthWidget does not request location, contacts, storage, camera, microphone, health, or
-any other sensitive permission.
+HealthWidget sends no notifications and requests no notification permission. It also does
+not request location, contacts, storage, camera, microphone, health, or any other sensitive
+permission.
 
 ## Backups
 
@@ -62,9 +60,9 @@ Android 12+ rules cover the same data). What actually happens with that data dep
 entirely on your device's own backup configuration, not on anything HealthWidget does:
 
 - If you have Android device backup turned on (Settings > System > Backup, tied to your
-  Google account) or use device-to-device transfer when setting up a new phone, your
-  notification frequency, quiet hours, sleep-alert toggle, widget style, and recent tip
-  history are included, encrypted in transit and at rest by Android's backup service.
+  Google account) or use device-to-device transfer when setting up a new phone, your widget
+  style and recent tip history are included, encrypted in transit and at rest by Android's
+  backup service.
 - **This is the one case where this data leaves your device.** Android's backup service
   uploads it to your Google account's backup storage. HealthWidget does not operate, and has
   no access to, that storage — it's part of the operating system, governed by your Google

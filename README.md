@@ -18,9 +18,9 @@
 > before the first Play Store upload.**
 
 A privacy-first Android wellness app for students and desk workers. No accounts, no
-tracking, no dashboards, no streaks. Just a home-screen widget with one rotating,
-[evidence-backed](TIP_SOURCES.md) micro-tip, and a small number of scheduled notification
-nudges — including a late-night sleep alert.
+tracking, no dashboards, no streaks, no notifications. Just a home-screen widget with one
+rotating, [evidence-backed](TIP_SOURCES.md) micro-tip — the whole point is to be a quiet
+presence you glance at, never something that interrupts you.
 
 ## The privacy promise
 
@@ -33,27 +33,23 @@ what that does and doesn't mean.
 
 ## v1 scope
 
-v1 is intentionally passive:
+v1 is intentionally passive — no notifications of any kind:
 
-- A Glance home-screen widget showing the current tip, refreshed at least every 2 hours and
-  on boot. Tapping it opens the settings screen.
+- A Glance home-screen widget showing the current tip. Tapping the tip card itself pulls a
+  new one on the spot; a small gear icon opens the settings screen (AppWidgets can't
+  intercept long-press, so a dedicated tap target is the only reliable way in).
+- The tip advances on its own after it's actually had a chance to be seen — roughly every 90
+  minutes of confirmed screen-on time since it was last shown, not a pure wall-clock timer
+  that could rotate a tip nobody ever looked at (see "Notable design decisions" below).
 - Four selectable widget background styles (Forest, Ocean, Sunset, Midnight), previewed live
   in Settings — the preview renders the same drawable the widget itself uses, so it never
   drifts from the real thing.
 - A "Why this tip?" card in Settings showing the current tip's citation, with a button that
   opens the primary source in the browser, and a button to pull a different tip on demand.
-- A single master notifications switch; turning it off silences nudges and the sleep alert
-  together without discarding your frequency/quiet-hours choices, and collapses that whole
-  section down to a one-line "off" status.
-- 0-6 daily notification nudges (user-configurable), each a rotating micro-tip.
-- One optional sleep alert at 23:00.
-- User-configurable quiet hours (default 23:30-07:00) during which nudges are silent — the
-  sleep alert is exempt by design.
-- The same tip never repeats within the last 30 shown, across the widget and notifications
-  combined.
+- The same tip never repeats within the last 30 shown.
 
-Explicitly **not** in v1: accounts, streaks, gamification, history/progress views, or any
-form of tracking.
+Explicitly **not** in v1: accounts, streaks, gamification, history/progress views,
+notifications, or any form of tracking.
 
 ## Architecture
 
@@ -66,23 +62,25 @@ architecture) rather than on each other's concrete classes:
   - `tips/` — `Tip` (a tip's text plus its citation — `sourceLabel`/`sourceUrl`, both
     required, see `TipCatalogTest`), `TipEngine`, `TipCatalog`, `TipHistoryRepository`
     (interface), and `AdvanceTipUseCase`, the one "pick + persist the next tip" rule shared
-    by the widget and both notification workers, so they can't silently diverge on
-    anti-repeat (FR5). `TipHistoryRepository` tracks the last `MAX_RECENT_TIPS` (30) tips
-    shown (by text) rather than just the single previous one, and `TipEngine` excludes all
-    of them when picking the next tip. `TipEngine.findByText` resolves a persisted tip's
-    text back to its full `Tip` (citation included) for the settings screen to display.
-  - `settings/` — the `AppSettings` model (notifications master switch, nudge frequency,
-    sleep alert, quiet hours, widget style) and `SettingsRepository` interface.
-  - `scheduling/` — `QuietHours` and `durationUntilNext(target: LocalTime, clock: Clock)`,
-    the DST/time-zone-safe "how long until this local clock time next occurs" calculation
-    (see "Notable design decisions" below).
+    by every call site (the periodic tick worker, the widget's own tap-to-refresh, and the
+    settings screen's manual refresh), so they can't silently diverge on anti-repeat (FR5).
+    `TipHistoryRepository` tracks the last `MAX_RECENT_TIPS` (30) tips shown (by text) rather
+    than just the single previous one, and `TipEngine` excludes all of them when picking the
+    next tip. `TipEngine.findByText` resolves a persisted tip's text back to its full `Tip`
+    (citation included) for the settings screen to display.
+  - `settings/` — the `AppSettings` model (currently just widget style) and
+    `SettingsRepository` interface.
+  - `scheduling/` — `TipRefreshSchedule` (`shouldAdvanceTip`, the tick-threshold math behind
+    the ~90-minutes-of-screen-on-time tip advance) and `WidgetRefreshRepository` (interface),
+    the persisted screen-on tick counter (see "Notable design decisions" below).
   Everything here is trivially unit-testable and reusable as-is by a future iOS port.
 - **`:app`** — the Android application, organized by feature rather than by technical
-  layer (`settings/`, `tips/`, `notifications/`, `widget/`, `boot/`). `settings/` and
-  `tips/` each have a `data/` sub-package with the DataStore-backed implementation of the
-  matching `:core` interface (`DataStoreSettingsRepository`, `DataStoreTipHistoryRepository`)
-  — dependents (workers, `AppContainer`, the settings screen) hold the `:core` interface
-  type, never the concrete DataStore class, per the Dependency Inversion Principle.
+  layer (`settings/`, `tips/`, `widget/`, `boot/`). `settings/`, `tips/`, and `widget/` each
+  have a `data/` sub-package with the DataStore-backed implementation of the matching
+  `:core` interface (`DataStoreSettingsRepository`, `DataStoreTipHistoryRepository`,
+  `DataStoreWidgetRefreshRepository`) — dependents (workers, `AppContainer`, the settings
+  screen) hold the `:core` interface type, never the concrete DataStore class, per the
+  Dependency Inversion Principle.
 
 ```mermaid
 graph TD
@@ -99,8 +97,8 @@ graph TD
             SettingsRepository["SettingsRepository (interface)"]
         end
         subgraph coreScheduling["scheduling"]
-            QuietHours
-            NextOccurrence["durationUntilNext"]
+            TipRefreshSchedule["shouldAdvanceTip"]
+            WidgetRefreshRepository["WidgetRefreshRepository (interface)"]
         end
     end
 
@@ -113,92 +111,85 @@ graph TD
         subgraph tipsFeature["tips"]
             DataStoreTipHistoryRepository["data/DataStoreTipHistoryRepository"]
         end
-        subgraph notif["notifications"]
-            NudgeScheduler
-            NudgeWorker
-            SleepAlertWorker
-            NotificationHelper
-        end
         subgraph widget["widget"]
             TipWidget
+            RefreshTipAction
             WidgetRefreshWorker
             WidgetScheduler
+            DataStoreWidgetRefreshRepository["data/DataStoreWidgetRefreshRepository"]
         end
+        AppContainer
         BootReceiver
-        ClockChangeReceiver
         DataStore[("DataStore<Preferences>")]
     end
 
     DataStoreSettingsRepository -.implements.-> SettingsRepository
     DataStoreTipHistoryRepository -.implements.-> TipHistoryRepository
+    DataStoreWidgetRefreshRepository -.implements.-> WidgetRefreshRepository
     DataStoreSettingsRepository --> DataStore
     DataStoreTipHistoryRepository --> DataStore
+    DataStoreWidgetRefreshRepository --> DataStore
     TipCatalog --> Tip
     TipEngine --> TipCatalog
     AdvanceTipUseCase --> TipEngine
     AdvanceTipUseCase --> TipHistoryRepository
 
     SettingsScreen --> SettingsRepository
-    SettingsScreen --> NudgeScheduler
     SettingsScreen --> TipHistoryRepository
     SettingsScreen --> TipEngine
-
-    NudgeWorker --> AdvanceTipUseCase
-    NudgeWorker --> QuietHours
-    NudgeWorker --> SettingsRepository
-    NudgeWorker --> NotificationHelper
-
-    SleepAlertWorker --> TipEngine
-    SleepAlertWorker --> SettingsRepository
-    SleepAlertWorker --> NotificationHelper
+    SettingsScreen --> AppContainer
 
     WidgetRefreshWorker --> AdvanceTipUseCase
+    WidgetRefreshWorker --> TipRefreshSchedule
+    WidgetRefreshWorker --> WidgetRefreshRepository
+    WidgetRefreshWorker --> AppContainer
+    RefreshTipAction --> AppContainer
     TipWidget --> AdvanceTipUseCase
     TipWidget --> TipHistoryRepository
+    AppContainer --> TipWidget
 
-    BootReceiver --> NudgeScheduler
     BootReceiver --> WidgetScheduler
-    ClockChangeReceiver --> NudgeScheduler
 ```
 
 Notable design decisions:
 
-- WorkManager has no "run at this exact clock time every day" primitive, so nudge/sleep
-  workers reschedule themselves ~24h ahead after each run (`durationUntilNext`), rather
-  than relying on `PeriodicWorkRequest`'s coarse, inexact intervals.
-- **DST/time-zone-safe scheduling**: `durationUntilNext(target: LocalTime, clock: Clock)`
-  (`:core`) computes the delay to the next occurrence of a local clock time using
-  `ZonedDateTime` rather than a naive "add 24 hours" — so a pending nudge or sleep alert
-  still lands on the intended wall-clock time across a DST transition or manual clock
-  change, not 24 real hours later. A target that falls in a spring-forward gap resolves
-  forward by the gap length; a target that falls in an autumn-fallback overlap resolves to
-  its earlier occurrence — both are `ZonedDateTime`'s own documented, deterministic
-  behavior, not custom logic, so they're easy to reason about and unit-test (see
-  `NextOccurrenceTest`, which covers both transitions plus a same-instant/different-zone
-  case). `Clock` is threaded through `NudgeScheduler`, `NudgeWorker`, and `SleepAlertWorker`
-  (each defaulting to a fresh `Clock.systemDefaultZone()`, never a cached one — the zone it
-  reports is frozen at the moment it's created) so every delay computation shares the same
-  DST-safe path. `ClockChangeReceiver` listens for `ACTION_TIMEZONE_CHANGED` and
-  `ACTION_TIME_CHANGED` (both exempt from Android's implicit-broadcast manifest
-  restrictions, like `BOOT_COMPLETED`) and fully recomputes and replaces
-  (`NudgeScheduler.rescheduleAll`, `ExistingWorkPolicy.REPLACE`) rather than merely checking
-  whether work already exists — a pending one-time work item's delay was computed against
-  whatever clock/zone was in effect when it was enqueued, so a subsequent zone or clock
-  change can only be corrected by recomputing it, not by leaving it alone. `BootReceiver`
-  now does the same full recompute (previously it only topped up missing work), since a
-  reboot is a plausible point for the clock/zone to have silently changed underneath it.
+- **The tip only advances after it's actually had a chance to be seen.** A pure wall-clock
+  timer could rotate a tip nobody ever saw (screen off overnight, phone face-down all
+  afternoon), so `WidgetRefreshWorker` instead ticks every `TICK_INTERVAL_MINUTES` (15,
+  WorkManager's own minimum periodic interval — there's no "notify me when the screen turns
+  on" primitive, and a real screen-on/off listener can't survive process death without a
+  foreground service) and only counts a tick if `PowerManager.isInteractive` is true at that
+  instant. `shouldAdvanceTip` (`:core`, `TipRefreshSchedule.kt`) advances the tip once
+  `TICKS_UNTIL_ADVANCE` (6) such ticks — ~90 minutes of confirmed on-screen time, accumulated
+  across ticks rather than requiring one unbroken session — have collected since it was last
+  shown. This is a sampling approximation, not a precise stopwatch (a tick only reflects the
+  instant it fired), but it's simple, needs no extra permissions or a live receiver, and the
+  count is persisted (`WidgetRefreshRepository`/`DataStoreWidgetRefreshRepository`), not held
+  in memory, so it survives the process dying between ticks. See `TipRefreshScheduleTest`.
 - **Concurrency-safe tip advancement**: `AdvanceTipUseCase` (`:core`) wraps its
-  read-history/select-tip/persist-tip sequence in a `kotlinx.coroutines.sync.Mutex`, so a
-  widget refresh and a notification firing at the same moment can't both read the same
-  stale history and pick the same tip. The mutex lives on the single `AdvanceTipUseCase`
-  instance `AppContainer` hands out (a `by lazy` singleton, already required for the
-  anti-repeat rule to hold across callers), so every caller shares the same lock without
-  each construction creating a new one. See `AdvanceTipUseCaseTest`'s concurrent-advances
-  test, which launches N concurrent advances against an N-tip pool and asserts all N tips
-  come out distinct — a real (if narrow) race in the old unsynchronized version.
-- The Glance widget's `updatePeriodMillis` is set to `0`; refresh is driven entirely by a
-  2-hour WorkManager periodic job, since the AppWidget framework's own update period has an
-  unreliable 30-minute floor.
+  read-history/select-tip/persist-tip sequence in a `kotlinx.coroutines.sync.Mutex`, so
+  concurrent callers (the periodic tick worker, the widget's own tap-to-refresh, a manual
+  refresh from Settings) can't both read the same stale history and pick the same tip. The
+  mutex lives on the single `AdvanceTipUseCase` instance `AppContainer` hands out (a `by
+  lazy` singleton, already required for the anti-repeat rule to hold across callers), so
+  every caller shares the same lock without each construction creating a new one. See
+  `AdvanceTipUseCaseTest`'s concurrent-advances test, which launches N concurrent advances
+  against an N-tip pool and asserts all N tips come out distinct — a real (if narrow) race in
+  the old unsynchronized version.
+- **Concurrency-safe widget rendering**: pushing the widget's actual UI
+  (`GlanceAppWidget.updateAll()`) is a separate step from picking the tip, and has its own
+  equivalent race — four independent triggers (the periodic tick worker, a style change, the
+  manual "get a different tip" button, tapping the widget itself) can call it with no
+  ordering guarantee between them, and two overlapping calls can finish out of order and
+  leave a stale render on screen (the real cause of the widget's background/tip only
+  *sometimes* updating correctly). `AppContainer.refreshWidget()` wraps the push in its own
+  `Mutex`, serializing every trigger through one call site. Each call still re-reads the
+  current settings/tip from DataStore at execution time rather than capturing a snapshot up
+  front, so serializing just matters for the push itself: whichever call runs last always
+  renders whatever is actually persisted, regardless of which trigger queued first.
+- The Glance widget's `updatePeriodMillis` is set to `0`; refresh is driven entirely by
+  `WidgetScheduler`'s own 15-minute WorkManager periodic job (see the tip-advance tick model
+  above), since the AppWidget framework's own update period has an unreliable 30-minute floor.
 - Tip content lives in bundled plain-text resources (`core/src/main/resources/tips/*.txt`
   plus a line-for-line `*_sources.txt` citation file per pool), not a JSON asset, to avoid
   pulling a JSON dependency into a module whose whole point is to stay dependency-free.
@@ -213,20 +204,6 @@ Notable design decisions:
   the settings screen's live preview/style swatches — Compose's own `painterResource` only
   handles vector/raster drawables, not `<shape>`/`<layer-list>` resources, and a hand-picked
   `Brush.linearGradient` stand-in would drift from the real widget over time.
-- Widget re-renders triggered from the settings screen (a style change, or the manual
-  "get a different tip" button) call `GlanceAppWidget.updateAll()` inside
-  `HealthWidgetApp.applicationScope` (a process-lifetime `CoroutineScope`), not the settings
-  screen's own `rememberCoroutineScope()`. Calling it directly from the screen's scope worked
-  once, then silently stopped updating the widget until the app was force-restarted: that
-  scope is cancelled if the user navigates away before the Glance composition finishes,
-  apparently leaving that widget ID's Glance session stuck. Routing it through a one-time
-  `WorkManager` job instead (mirroring `WidgetRefreshWorker`) fixed the stuck-session problem
-  but reintroduced a multi-second lag before the user-visible change appeared — unacceptable
-  for something tapped expecting instant feedback — so it now runs directly, just in a scope
-  that outlives the screen instead of one that doesn't.
-- A user-configurable widget refresh interval (1h/2h/4h) was built, then removed: FR1 only
-  requires "at least every 2 hours," and the extra setting wasn't worth the added surface
-  area. `WidgetScheduler` now hardcodes a 2-hour interval again.
 - **Backup policy**: the app opts in to Android's built-in backup system and explicitly
   includes settings + tip history in both `backup_rules.xml` (legacy, API < 31) and
   `data_extraction_rules.xml` (API 31+) — chosen over excluding this data, since it's the
@@ -239,13 +216,6 @@ Notable design decisions:
   "Backups" section for what this does and doesn't mean for the user — notably, this is the
   one case where locally-stored data can leave the device (via Android's own backup
   service), which the policy is written to state plainly rather than gloss over.
-- `NudgeWorker` now gates both showing the notification and rescheduling itself on
-  `AppSettings.notificationsEnabled`, matching the pattern `SleepAlertWorker` already used
-  (only quiet hours was checked before). Without this, a worker already in flight when the
-  user disables notifications could win a race against `NudgeScheduler.rescheduleAll`'s
-  cancellation and re-enqueue itself for tomorrow regardless — a real latent bug, not just a
-  hypothetical one, since `rescheduleAll` and an in-flight worker's own reschedule both
-  write to the same unique work name from different call sites.
 
 ## Tech stack
 
@@ -274,10 +244,9 @@ CI (`.github/workflows/ci.yml`) runs all three plus a full build on every push a
 ## Roadmap
 
 - [ ] Widget size variants (small/medium) via Glance's responsive sizing.
-- [ ] Per-slot custom nudge times (each frequency level 0-6 still ships fixed default times).
 - [ ] Localization beyond `en` (all strings are already externalized to `strings.xml`).
-- [ ] **iOS port** via WidgetKit + App Intents, sharing the same tip-selection and
-      quiet-hours rules (the `:core` module's logic is plain enough to port directly).
+- [ ] **iOS port** via WidgetKit + App Intents, sharing the same tip-selection rules (the
+      `:core` module's logic is plain enough to port directly).
 
 ## License
 

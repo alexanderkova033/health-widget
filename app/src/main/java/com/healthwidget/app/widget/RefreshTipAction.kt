@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.glance.GlanceId
 import androidx.glance.action.ActionParameters
 import androidx.glance.appwidget.action.ActionCallback
-import androidx.glance.appwidget.updateAll
 import com.healthwidget.app.HealthWidgetApp
 import java.time.LocalTime
 
@@ -22,6 +21,6 @@ class RefreshTipAction : ActionCallback {
     ) {
         val container = (context.applicationContext as HealthWidgetApp).container
         container.advanceTip(LocalTime.now())
-        TipWidget().updateAll(context)
+        container.refreshWidget()
     }
 }

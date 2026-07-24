@@ -6,9 +6,7 @@
 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Runtime-requested on API 33+ (FR2/FR3 nudge and sleep-alert notifications). -->
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <!-- FR7: reschedule notifications and the widget refresh after a reboot. -->
+    <!-- FR7: reschedule the widget refresh after a reboot. -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
@@ -52,18 +50,6 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
-            </intent-filter>
-        </receiver>
-
-        <!-- TIMEZONE_CHANGED and TIME_SET are both protected system broadcasts and are on
-             Android's exemption list for manifest-declared (static) implicit-broadcast
-             receivers, so exported=true here is safe the same way it is for BootReceiver. -->
-        <receiver
-            android:name=".notifications.ClockChangeReceiver"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
-                <action android:name="android.intent.action.TIME_SET" />
             </intent-filter>
         </receiver>
 

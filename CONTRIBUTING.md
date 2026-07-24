@@ -60,9 +60,9 @@ Keep new tips:
   (e.g. a caffeine half-life, a recommended bedroom temperature range) is fine; an
   invented-sounding one is not.
 - Phrased as a gentle suggestion ("can help", "is linked to"), never a guaranteed outcome.
-- Short enough to read at a glance in a notification or a small widget — in practice, under
-  ~115 characters, since the widget caps tip text at 5 lines of bold 16sp type
-  (`TipWidget.kt`) and has to fit the smallest home-screen widget size too.
+- Short enough to read at a glance in a small widget — in practice, under ~115 characters,
+  since the widget caps tip text at 5 lines of bold 16sp type (`TipWidget.kt`) and has to fit
+  the smallest home-screen widget size too.
 - Backed by a real primary source: add the tip's text to the pool `.txt` file and its
   `Label<TAB>URL` citation to the matching `_sources.txt` file at the same line position,
   and add or update the corresponding entry in [TIP_SOURCES.md](TIP_SOURCES.md).

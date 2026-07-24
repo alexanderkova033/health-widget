@@ -209,9 +209,83 @@ Two follow-up passes after the initial build-out:
     tests above and the `NudgeWorker` bug fix remain. If Android-side test coverage is wanted
     later, the approach above (documented here in case it's picked back up) worked and all
     tests passed before being removed.
+- **`feat:` notifications removed entirely, tip advancement retimed to ~90 minutes of
+  confirmed screen-on time, and the widget-refresh race fixed for real (2026-07-24, later
+  still)** — by request ("I don't want the app to create distractions"):
+  - **Every notification code path is gone.** Deleted: `NudgeScheduler`, `NudgeWorker`,
+    `SleepAlertWorker`, `NotificationHelper`, `ClockChangeReceiver`, `QuietHours`,
+    `durationUntilNext`/`NextOccurrence` (dead once nothing computes a daily reschedule delay
+    any more), and their tests. `AppSettings` is down to just `widgetStyle`;
+    `SettingsRepository`/`DataStoreSettingsRepository` lost every notification-related
+    method and DataStore key. Removed from the manifest: `POST_NOTIFICATIONS`, the
+    `ClockChangeReceiver` receiver declaration. `HealthWidgetApp.onCreate` and `BootReceiver`
+    no longer touch notification channels or scheduling — `BootReceiver` doesn't even need
+    `AppSettings` any more, since `WidgetScheduler` takes none. The Settings screen lost its
+    entire Notifications card (master switch, frequency slider, sleep alert toggle, quiet
+    hours time pickers, the permission-rationale card) along with every string and icon that
+    only that card used. `sleepLate`/`sleepEarlyHours` tip pools are untouched — they're a
+    normal part of `TipEngine.dayPartFor`'s time-of-day rotation (23:00-05:59), not
+    notification-specific, so the widget still shows a wind-down tip late at night, just via
+    the ordinary refresh path instead of a dedicated alert.
+  - **Tip advancement is retimed from a fixed periodic clock to "~90 minutes of confirmed
+    screen-on time since it was last seen."** The stated goal was specifically not wanting a
+    tip to change without the user having actually seen the previous one — a pure wall-clock
+    timer could rotate one nobody ever looked at (screen off overnight, phone face-down all
+    afternoon). There's no "notify me when the screen turns on" WorkManager primitive, and a
+    real screen-on/off `BroadcastReceiver` can't survive process death without a foreground
+    service (rejected as overkill for a passive widget), so `WidgetRefreshWorker` instead
+    ticks every 15 minutes (WorkManager's own periodic-interval floor,
+    `TICK_INTERVAL_MINUTES` in new `core/scheduling/TipRefreshSchedule.kt`) and only counts a
+    tick if `PowerManager.isInteractive` is true at that instant; `shouldAdvanceTip` advances
+    the tip once 6 such ticks (`TICKS_UNTIL_ADVANCE`) have accumulated since it was last
+    shown — a sampling approximation (a tick reflects only the instant it fired, not the
+    whole interval before it), not a precise stopwatch, but it needs no extra permissions, no
+    live receiver, and the count persists (new `WidgetRefreshRepository`/
+    `DataStoreWidgetRefreshRepository`, mirroring the existing repository-interface-in-`:core`
+    pattern) rather than living in memory, so it survives the process dying between ticks.
+    `WidgetScheduler`'s periodic job dropped from a 2-hour interval to the new 15-minute tick;
+    `WidgetRefreshWorker` gained a `KEY_FORCE` input flag so `refreshNow()` (used right after
+    boot) can still force an immediate *re-render* of the widget's current state without that
+    counting as (or requiring) a tick. Covered by new `TipRefreshScheduleTest` (`:core`, pure
+    JVM).
+  - **Found and fixed the real cause of the "widget background only sometimes updates"
+    bug**, which the user confirmed was still happening intermittently. The previous fix
+    (see the two-attempts writeup earlier in this file) made a single style-change call safe
+    from the screen's own coroutine scope, but never addressed that `TipWidget().updateAll()`
+    was being called from **four independent, uncoordinated places** once the widget's own
+    tap-to-refresh action shipped: the periodic worker, a Settings style change, the manual
+    "get a different tip" button, and now tapping the widget itself. With no ordering
+    guarantee between them, two overlapping calls could finish out of order and leave a
+    stale render on screen — worse now than before, since the widget's own refresh action
+    made overlaps far more likely (e.g. tapping the widget right as the periodic tick fires).
+    Fixed by adding `AppContainer.refreshWidget()`, a `Mutex`-guarded single entry point that
+    all four call sites now go through instead of calling `TipWidget().updateAll()` directly.
+    Each call still re-reads current settings/tip from DataStore at execution time rather
+    than a captured snapshot, so serializing the push alone is sufficient: whichever call
+    runs last always renders whatever is actually persisted, regardless of which trigger
+    queued first — no change needed to `AdvanceTipUseCase`'s own separate mutex.
+  - README, PRIVACY.md, and CONTRIBUTING.md updated to match: the architecture diagram and
+    "Notable design decisions" no longer mention any removed notification component, the v1
+    scope list and privacy policy no longer describe notification permissions or settings
+    that don't exist any more, and the tip-length guidance in CONTRIBUTING.md dropped its
+    "read at a glance in a notification" framing.
 
 ## Verified for real (not just reviewed)
 
+- **The notifications-removal/tip-retiming/widget-refresh-race-fix pass above is verified**
+  via `ktlintCheck`, `test` (`:core` 29 tests — down from 44 with `QuietHoursTest`/
+  `NextOccurrenceTest` gone, plus the 3 new `TipRefreshScheduleTest` cases; `:app` 5 tests
+  per variant/10 total, down from 10/20 with every notification-settings DataStore test gone
+  — all green), `lint`
+  (0 errors, 17 pre-existing dependency/icon warnings, same categories as before this pass,
+  nothing new), and a full `build` including `assembleRelease` with R8 minification — all run
+  against the same real JDK 17 + Android SDK scratch setup as the earlier passes (see "Local
+  environment notes"). **Not yet verified on a physical device**: the retimed tip advancement
+  (needs waiting out real ticks or manipulating device time to see it actually fire), the
+  widget's tap-to-refresh action, and — most importantly — whether the widget-background
+  race is actually gone now (the bug this pass targets was confirmed still happening
+  intermittently by the user, so the fix needs a real re-test, not just a passing build) are
+  all still pending an on-device pass. See "In progress right now."
 - The DST/time-zone-safe-scheduling/concurrency/backup-rules/branding/API-36 pass above is
   verified via `ktlintCheck`, `lint` (0 errors), `test` (`:core` 44 tests including the new
   DST/timezone matrix and the mutex-regression concurrency test, `:app` 10 tests, all green),
@@ -278,21 +352,25 @@ Two follow-up passes after the initial build-out:
 
 ## In progress right now
 
-Testing on a **physical Android device via USB** (the user's choice over emulator /
-Android Studio / Firebase Test Lab, made explicitly) — a Samsung Galaxy A34 (`SM_A346E`),
-using a USB-A-to-C cable (not the USB-C-to-C the user would've preferred, but confirmed
-working fine — an early "is this a bad cable" theory turned out to be wrong; Windows showed
-a perfectly healthy, driver-bound ADB interface throughout). The device has repeatedly
-dropped to `unauthorized` in `adb devices -l` over the course of this session and needed
-"Allow" tapped again on the phone each time — that's normal for a "new" USB session from
-Android's perspective, not a sign of a deeper problem, but expect to hit it again next time.
+The notifications-removal/tip-retiming/widget-refresh-race-fix pass (see above) is code-
+complete and build-verified (`ktlintCheck`, `test`, `lint` 0 errors, full `build` including
+`assembleRelease`), but **not yet installed or exercised on the physical device** — this
+session did not have device access. Three things specifically need a real on-device pass
+before this can be considered done, in rough priority order:
 
-The build with the second (current) widget-refresh fix — `applicationScope` instead of
-`WorkManager` — has been installed on the device. **Awaiting the user's re-test**: tap
-through several different widget styles in a row without restarting the app (the exact
-sequence that exposed both the original stuck-session bug and the WorkManager-lag
-regression) and confirm the home-screen widget's background changes instantly each time,
-with no lag and no "only works once" behavior.
+1. **The widget-background race fix** (`AppContainer.refreshWidget()`'s `Mutex`) is the one
+   that matters most to re-verify, since the bug it targets was confirmed still happening
+   *intermittently* even after the previous fix — an inconsistent bug needs repeated,
+   deliberate reproduction attempts (tap the widget itself, change style in Settings, and
+   hit manual tip-refresh in quick, overlapping succession) to have confidence it's actually
+   gone, not just that it didn't happen to reproduce once.
+2. **The retimed tip advancement** — confirm the tip does *not* change while the screen has
+   been off, and does change once you've had the screen on for a cumulative ~90 minutes
+   since it last changed. Slow to verify at real speed; consider temporarily lowering
+   `TICKS_UNTIL_ADVANCE`/`TICK_INTERVAL_MINUTES` (`core/scheduling/TipRefreshSchedule.kt`)
+   for a faster manual test loop, then reverting before shipping.
+3. **The widget's own tap-to-refresh action and gear-icon settings shortcut** (both shipped
+   in the checkpoint commit just before this pass, never confirmed on-screen either).
 
 Two methodological notes for next time:
 - While both this session and the user were sending input to the same phone at once (adb

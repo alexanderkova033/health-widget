@@ -2,36 +2,10 @@
 <resources>
     <string name="app_name">HealthWidget</string>
 
-    <string name="channel_nudge_name">Wellness tips</string>
-    <string name="channel_nudge_description">Occasional micro-tip reminders throughout the day.</string>
-    <string name="channel_sleep_name">Sleep reminder</string>
-    <string name="channel_sleep_description">A single reminder around bedtime to consider winding down.</string>
-
     <string name="widget_description">Shows one rotating wellness micro-tip. Tap for a new tip, or use the gear icon for settings.</string>
     <string name="widget_settings_action">Open settings</string>
 
     <string name="settings_title">@string/app_name</string>
-
-    <string name="settings_notifications_title">Notifications</string>
-    <string name="settings_notifications_off_hint">Off — no nudges, no sleep alert.</string>
-
-    <string name="settings_frequency_title">Nudge frequency</string>
-    <string name="settings_frequency_off">Off</string>
-    <plurals name="settings_frequency_times">
-        <item quantity="one">%d time a day</item>
-        <item quantity="other">%d times a day</item>
-    </plurals>
-
-    <string name="settings_sleep_alert_title">Sleep alert</string>
-    <string name="settings_sleep_alert_description">Wind-down reminder at 23:00.</string>
-
-    <string name="settings_quiet_hours_title">Quiet hours</string>
-    <string name="settings_quiet_hours_description">Nudges pause here; the sleep alert isn\'t affected.</string>
-    <string name="settings_quiet_hours_start">Starts</string>
-    <string name="settings_quiet_hours_end">Ends</string>
-
-    <string name="settings_notification_permission_rationale">Allow notifications so nudges and the sleep alert can actually appear.</string>
-    <string name="settings_notification_permission_action">Allow</string>
 
     <string name="settings_widget_title">Widget</string>
     <string name="settings_widget_style_forest">Forest</string>
@@ -48,7 +22,4 @@
 
     <string name="settings_about_title">About</string>
     <string name="settings_about_privacy_promise">Everything stays on your phone — tips, settings, history. No account, no tracking, no ads.</string>
-
-    <string name="action_ok">OK</string>
-    <string name="action_cancel">Cancel</string>
 </resources>
