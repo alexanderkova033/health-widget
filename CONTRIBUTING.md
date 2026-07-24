@@ -47,6 +47,13 @@ characters; use the body to explain *why*, not *what* (the diff already shows *w
 
 Tip pools live in `core/src/main/resources/tips/*.txt`, one tip per line. Keep new tips:
 
-- Non-numeric / non-statistical (no fabricated stats).
-- Phrased as a gentle suggestion ("can help", "supports"), never a guaranteed outcome.
-- Short enough to read at a glance in a notification or a small widget.
+- Non-numeric / non-statistical (no fabricated stats) — a real, well-established figure
+  (e.g. a caffeine half-life, a recommended bedroom temperature range) is fine; an
+  invented-sounding one is not.
+- Phrased as a gentle suggestion ("can help", "is linked to"), never a guaranteed outcome.
+- Short enough to read at a glance in a notification or a small widget — in practice, under
+  ~115 characters, since the widget caps tip text at 5 lines of bold 16sp type
+  (`TipWidget.kt`) and has to fit the smallest home-screen widget size too.
+- Backed by real research: add or update the matching entry in
+  [TIP_SOURCES.md](TIP_SOURCES.md) so every claim a tip makes stays traceable to a primary
+  source.
