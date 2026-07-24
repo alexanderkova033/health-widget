@@ -2,34 +2,20 @@
 
 ![CI](https://github.com/alexanderkova033/health-widget/actions/workflows/ci.yml/badge.svg)
 
-> `HealthWidget` is a working title used as the package/module name throughout this repo.
-> Three name ideas for before a store listing goes out:
->
-> 1. **Quiet Cue** — plainly describes the product (a quiet, occasional nudge) without
->    implying tracking or gamification.
-> 2. **MicroPause** — leads with the "micro-tip, zero-friction" mechanic itself.
-> 3. **Driftwell** — softer/more brandable; "drift" nods to the passive, no-dashboard
->    philosophy, "well" to the wellness framing.
->
-> User-facing display text is already centralized in `strings.xml` (`app_name`, referenced
-> everywhere else needs it, including the widget's brand label) so picking a final name is
-> just an edit to that one file. **`applicationId` (currently `com.healthwidget.app`) is a
-> separate, higher-stakes decision — see the pre-release checklist in [STATUS.md](STATUS.md)
-> before the first Play Store upload.**
+> The name is settled: **HealthWidget**, everywhere — `app_name` in `strings.xml`,
+> `applicationId` (`com.healthwidget.app`), the repo name. Nothing left to decide here.
 
-A privacy-first Android wellness app for students and desk workers. No accounts, no
+A privacy-first Android wellness app for students and desk workers: no accounts, no
 tracking, no dashboards, no streaks, no notifications. Just a home-screen widget with one
-rotating, [evidence-backed](TIP_SOURCES.md) micro-tip — the whole point is to be a quiet
-presence you glance at, never something that interrupts you.
+rotating, [evidence-backed](TIP_SOURCES.md) tip.
 
 ## The privacy promise
 
-**100% offline. Zero data collected.** There is no server, no analytics SDK, no crash
-reporter, no ad SDK, and the app manifest does not declare the `INTERNET` permission — so
-even a compromised dependency couldn't phone home. Every setting and the tip history live in
-on-device DataStore, and are included in Android's own encrypted device-backup system like
-any other app's local data — see [PRIVACY.md](PRIVACY.md)'s "Backups" section for exactly
-what that does and doesn't mean.
+**100% offline. Zero data collected.** No server, no analytics SDK, no crash reporter, no ad
+SDK, and the manifest doesn't declare the `INTERNET` permission — a compromised dependency
+couldn't phone home even if it tried. Tip history lives in on-device DataStore and is
+included in Android's own encrypted device backup like any other app's local data — see
+[PRIVACY.md](PRIVACY.md)'s "Backups" section for what that does and doesn't mean.
 
 ## v1 scope
 
@@ -252,6 +238,22 @@ CI (`.github/workflows/ci.yml`) runs all three plus a full build on every push a
 
 ## Roadmap
 
+- [ ] A motivational/philosophical quote pool, aimed specifically at lowering stress and
+      lifting mood — a new tone alongside the practical wellness tips, not a replacement for
+      them.
+- [ ] Lighter, mood-lifting content in the same spirit — a bit of gentle humor or warmth
+      mixed in, not just earnest advice. Note: `TipCatalogTest` currently enforces a real
+      external citation for every tip; a joke or a light line has no research claim to cite,
+      so this needs a decision on how citation applies to this pool before it ships (e.g. an
+      explicit "no citation needed" category, rather than quietly weakening the existing rule).
+- [ ] More tips in the existing pools (general/morning/afternoon/evening).
+- [ ] More background styles beyond the current four (Forest/Ocean/Sunset/Midnight).
+- [ ] Remove em dashes from all app-facing text — bundled tip content included, not just
+      `strings.xml`/docs — swapping in plainer punctuation (a comma, a period, "and") instead.
+      A style-consistency pass, not a rewording of what any tip actually says.
+- [ ] Audit the tip pools for near-duplicates — tips that give essentially the same advice in
+      different words (not caught by `TipCatalogTest`'s exact-text-duplicate check), and either
+      merge or differentiate them so the rotation reads as more varied than it currently is.
 - [ ] Widget size variants (small/medium) via Glance's responsive sizing.
 - [ ] Localization beyond `en` (all strings are already externalized to `strings.xml`).
 - [ ] **iOS port** via WidgetKit + App Intents, sharing the same tip-selection rules (the

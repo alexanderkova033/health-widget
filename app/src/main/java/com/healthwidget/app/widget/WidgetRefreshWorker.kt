@@ -37,7 +37,8 @@ class WidgetRefreshWorker(
         if (powerManager.isInteractive) {
             val ticks = container.widgetRefreshRepository.screenOnTicks.first()
             if (shouldAdvanceTip(ticks)) {
-                container.advanceTip(LocalTime.now())
+                val moreVarietyEnabled = container.settingsRepository.settings.first().moreVarietyEnabled
+                container.advanceTip(LocalTime.now(), moreVarietyEnabled = moreVarietyEnabled)
                 container.widgetRefreshRepository.setScreenOnTicks(0)
                 container.refreshWidget()
             } else {

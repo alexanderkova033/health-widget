@@ -24,10 +24,12 @@ import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Science
 import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -35,6 +37,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -47,6 +50,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.healthwidget.app.HealthWidgetApp
 import com.healthwidget.app.R
+import com.healthwidget.core.settings.AppSettings
+import com.healthwidget.core.settings.SettingsRepository
 import com.healthwidget.core.tips.Tip
 import com.healthwidget.core.tips.TipEngine
 import com.healthwidget.core.tips.TipHistoryRepository
@@ -56,12 +61,19 @@ import java.time.LocalTime
 
 @Composable
 fun SettingsScreen(
+    settingsRepository: SettingsRepository,
     tipHistoryRepository: TipHistoryRepository,
     tipEngine: TipEngine,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var settings by remember { mutableStateOf(AppSettings.DEFAULT) }
     var lastTipText by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(settingsRepository) {
+        settingsRepository.settings.collectLatest { settings = it }
+    }
 
     LaunchedEffect(tipHistoryRepository) {
         tipHistoryRepository.recentTips.collectLatest { recent ->
@@ -88,12 +100,19 @@ fun SettingsScreen(
             Text(text = stringResource(R.string.settings_title), style = MaterialTheme.typography.titleLarge)
         }
 
+        SectionCard {
+            VarietySection(
+                enabled = settings.moreVarietyEnabled,
+                onToggle = { enabled -> scope.launch { settingsRepository.setMoreVarietyEnabled(enabled) } },
+            )
+        }
+
         lastTipText?.let { text ->
             SectionCard {
                 TipSourceSection(
                     tipText = text,
                     source = tipEngine.findByText(text),
-                    onRefresh = { refreshTipNow(context) },
+                    onRefresh = { refreshTipNow(context, settings.moreVarietyEnabled) },
                 )
             }
         }
@@ -102,6 +121,26 @@ fun SettingsScreen(
             AboutSection()
         }
     }
+}
+
+/** The "more variety" toggle — a lean, not a filter (see [TipEngine.messageFor]'s
+ * `moreVarietyEnabled` parameter): it never removes the practical tips or the
+ * philosophical/lighthearted ones entirely, it just flips which one is the overwhelming
+ * majority of what shows up. */
+@Composable
+private fun VarietySection(
+    enabled: Boolean,
+    onToggle: (Boolean) -> Unit,
+) {
+    SectionTitle(
+        icon = Icons.Filled.Shuffle,
+        text = stringResource(R.string.settings_variety_title),
+        trailing = { Switch(checked = enabled, onCheckedChange = onToggle) },
+    )
+    Text(
+        text = stringResource(R.string.settings_variety_description),
+        style = MaterialTheme.typography.bodyMedium,
+    )
 }
 
 /** Picks a new tip out of turn (same selection/anti-repeat logic as the scheduled refresh —
@@ -114,10 +153,13 @@ fun SettingsScreen(
  * directly) so this can't race the periodic tick worker or the widget's own tap-to-refresh
  * action and leave a stale render on screen.
  */
-private fun refreshTipNow(context: Context) {
+private fun refreshTipNow(
+    context: Context,
+    moreVarietyEnabled: Boolean,
+) {
     val app = context.applicationContext as HealthWidgetApp
     app.applicationScope.launch {
-        app.container.advanceTip(LocalTime.now(), manual = true)
+        app.container.advanceTip(LocalTime.now(), manual = true, moreVarietyEnabled = moreVarietyEnabled)
         app.container.refreshWidget()
     }
 }

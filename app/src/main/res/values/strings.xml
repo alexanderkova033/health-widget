@@ -2,10 +2,13 @@
 <resources>
     <string name="app_name">HealthWidget</string>
 
-    <string name="widget_description">Shows one rotating wellness micro-tip. Tap for a new tip, or use the gear icon for settings.</string>
+    <string name="widget_description">A rotating wellness tip. Tap it for a new one, or the gear icon for settings.</string>
     <string name="widget_settings_action">Open settings</string>
 
     <string name="settings_title">@string/app_name</string>
+
+    <string name="settings_variety_title">More variety</string>
+    <string name="settings_variety_description">Leans the mix toward motivational and lighthearted tips instead of just practical ones — never only one or the other, just which one shows up more.</string>
 
     <string name="settings_tip_source_title">Why this tip?</string>
     <string name="settings_tip_source_quote">“%1$s”</string>
@@ -14,5 +17,5 @@
     <string name="settings_tip_refresh_action">Get a different tip</string>
 
     <string name="settings_about_title">About</string>
-    <string name="settings_about_privacy_promise">Everything stays on your phone — tips, settings, history. No account, no tracking, no ads.</string>
+    <string name="settings_about_privacy_promise">Your tips and history stay on this phone. No account, no tracking, no ads.</string>
 </resources>

@@ -5,6 +5,7 @@ import androidx.glance.GlanceId
 import androidx.glance.action.ActionParameters
 import androidx.glance.appwidget.action.ActionCallback
 import com.healthwidget.app.HealthWidgetApp
+import kotlinx.coroutines.flow.first
 import java.time.LocalTime
 
 /**
@@ -23,7 +24,8 @@ class RefreshTipAction : ActionCallback {
         parameters: ActionParameters,
     ) {
         val container = (context.applicationContext as HealthWidgetApp).container
-        container.advanceTip(LocalTime.now(), manual = true)
+        val moreVarietyEnabled = container.settingsRepository.settings.first().moreVarietyEnabled
+        container.advanceTip(LocalTime.now(), manual = true, moreVarietyEnabled = moreVarietyEnabled)
         container.refreshWidget()
     }
 }

@@ -3,10 +3,12 @@ package com.healthwidget.app
 import android.content.Context
 import androidx.glance.appwidget.updateAll
 import com.healthwidget.app.common.healthWidgetDataStore
+import com.healthwidget.app.settings.data.DataStoreSettingsRepository
 import com.healthwidget.app.tips.data.DataStoreTipHistoryRepository
 import com.healthwidget.app.widget.TipWidget
 import com.healthwidget.app.widget.data.DataStoreWidgetRefreshRepository
 import com.healthwidget.core.scheduling.WidgetRefreshRepository
+import com.healthwidget.core.settings.SettingsRepository
 import com.healthwidget.core.tips.AdvanceTipUseCase
 import com.healthwidget.core.tips.TipEngine
 import com.healthwidget.core.tips.TipHistoryRepository
@@ -17,8 +19,8 @@ import kotlinx.coroutines.sync.withLock
  * Small hand-written composition root. The fixed tech stack has no DI framework, and this
  * app is too small to justify pulling one in — a handful of `by lazy` singletons is enough.
  *
- * Exposes the domain-layer interface ([TipHistoryRepository]), not the DataStore-backed
- * implementation class, so callers depend on the abstraction.
+ * Exposes the domain-layer interfaces ([SettingsRepository], [TipHistoryRepository]), not
+ * the DataStore-backed implementation classes, so callers depend on the abstraction.
  */
 class AppContainer(context: Context) {
     private val appContext = context.applicationContext
@@ -33,6 +35,10 @@ class AppContainer(context: Context) {
     // whichever call runs last always renders whatever is actually persisted, regardless of
     // which trigger queued first.
     private val widgetRefreshMutex = Mutex()
+
+    val settingsRepository: SettingsRepository by lazy {
+        DataStoreSettingsRepository(appContext.healthWidgetDataStore)
+    }
 
     val tipHistoryRepository: TipHistoryRepository by lazy {
         DataStoreTipHistoryRepository(appContext.healthWidgetDataStore)

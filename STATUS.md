@@ -376,14 +376,10 @@ Two follow-up passes after the initial build-out:
 - **Store icon**: `store-assets/play-store-icon-512.png` — flattened 512×512 PNG for the
   Play Console listing.
 - **Not yet done**:
-  - **`applicationId` (currently `com.healthwidget.app`) must be finalized before the first
-    Play Store upload — Google Play treats it as permanent once published, and changing it
-    later means a brand-new store listing with zero carried-over installs/reviews, not an
-    update.** Pick it once the final public name (Quiet Cue / MicroPause / Driftwell / other —
-    see README) is locked in, then change `applicationId` in `app/build.gradle.kts` as one of
-    the very last pre-launch steps. User-facing display text is already centralized in
-    `strings.xml`, so the name itself is a one-file edit; `applicationId` is not touched by
-    that and is intentionally left as-is (`com.healthwidget.app`) until this decision is made.
+  - **Naming is decided (2026-07-24): the app stays "HealthWidget," `applicationId` stays
+    `com.healthwidget.app`.** Nothing to change here before the first Play Store upload — the
+    three alternate names previously under consideration (Quiet Cue / MicroPause / Driftwell)
+    are dropped.
   - No Play Console developer account yet ($25, identity verification).
   - `PRIVACY.md` isn't hosted at a public URL yet (Play Console requires one — GitHub Pages
     on this repo is the easy option).

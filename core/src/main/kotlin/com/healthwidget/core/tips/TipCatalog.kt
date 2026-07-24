@@ -17,6 +17,13 @@ data class TipCatalog(
     val evening: List<Tip>,
     val sleepLate: Tip,
     val sleepEarlyHours: Tip,
+    // Foundation for the "more variety" toggle (see TipEngine.pick) — deliberately empty until
+    // actual motivational/philosophical and lighthearted content is written and loadDefault()
+    // is updated to load it from tips/philosophical.txt and tips/lighthearted.txt. Defaulted
+    // (rather than required) so every existing TipCatalog(...) construction, in tests and
+    // loadDefault() alike, keeps compiling unchanged until that content lands.
+    val philosophical: List<Tip> = emptyList(),
+    val lighthearted: List<Tip> = emptyList(),
 ) {
     companion object {
         fun loadDefault(): TipCatalog =

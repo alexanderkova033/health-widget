@@ -134,14 +134,91 @@ class TipEngineTest {
         assertThat(tip.text).isEqualTo("Only")
     }
 
+    @Test
+    fun `more variety toggle is a no-op while the tone pools are empty`() {
+        // testCatalog has no philosophical/lighthearted content (the toggle's foundation, not
+        // yet wired to any real content) — moreVarietyEnabled must not change anything while
+        // that's true, since selectGroup should short-circuit straight to the practical pool.
+        assertPoolComposition(LocalTime.of(9, 0), testCatalog.general + testCatalog.morning, moreVarietyEnabled = true)
+    }
+
+    @Test
+    fun `more variety enabled makes the tone pool the overwhelming majority, not the only option`() {
+        val toneCatalog = testCatalog.copy(philosophical = listOf(tip("P1"), tip("P2")))
+        val engine = TipEngine(toneCatalog, Random(seed = 7))
+
+        val toneShare = toneShareOverManyDraws(engine, moreVarietyEnabled = true)
+
+        // 80% target (TONE_DOMINANT_CHANCE_PERCENT) with tolerance for statistical noise -
+        // the point of this test is "clearly dominant," not "exactly 80%."
+        assertThat(toneShare).isAtLeast(0.65)
+        assertThat(toneShare).isAtMost(0.95)
+    }
+
+    @Test
+    fun `more variety disabled still lets the tone pool through sometimes, not never`() {
+        val toneCatalog = testCatalog.copy(philosophical = listOf(tip("P1"), tip("P2")))
+        val engine = TipEngine(toneCatalog, Random(seed = 7))
+
+        val toneShare = toneShareOverManyDraws(engine, moreVarietyEnabled = false)
+
+        // 20% target (TONE_MINORITY_CHANCE_PERCENT) with the same generous tolerance.
+        assertThat(toneShare).isAtLeast(0.05)
+        assertThat(toneShare).isAtMost(0.35)
+    }
+
+    @Test
+    fun `falls back to the practical pool if the tone pool is empty, even with more variety enabled`() {
+        val engine = TipEngine(testCatalog, Random(seed = 1))
+        repeat(50) {
+            val tip = engine.messageFor(LocalTime.of(9, 0), recentTips = emptyList(), moreVarietyEnabled = true)
+            assertThat(testCatalog.general + testCatalog.morning).contains(tip)
+        }
+    }
+
+    @Test
+    fun `falls back to the tone pool if the practical pool is empty`() {
+        val emptyGeneralCatalog =
+            testCatalog.copy(
+                general = emptyList(),
+                morning = emptyList(),
+                philosophical = listOf(tip("P1")),
+            )
+        val engine = TipEngine(emptyGeneralCatalog, FixedIndexRandom(0))
+
+        val tip = engine.messageFor(LocalTime.of(9, 0), recentTips = emptyList(), moreVarietyEnabled = false)
+
+        assertThat(tip.text).isEqualTo("P1")
+    }
+
+    private fun toneShareOverManyDraws(
+        engine: TipEngine,
+        moreVarietyEnabled: Boolean,
+        draws: Int = 2000,
+    ): Double {
+        val toneHits =
+            (1..draws).count {
+                val tip =
+                    engine.messageFor(
+                        LocalTime.of(9, 0),
+                        recentTips = emptyList(),
+                        moreVarietyEnabled = moreVarietyEnabled,
+                    )
+                tip.text.startsWith("P")
+            }
+        return toneHits.toDouble() / draws
+    }
+
     private fun assertPoolComposition(
         time: LocalTime,
         expectedPool: List<Tip>,
+        moreVarietyEnabled: Boolean = false,
     ) {
         val actual =
             expectedPool.indices
                 .map { index ->
-                    TipEngine(testCatalog, FixedIndexRandom(index)).messageFor(time, recentTips = emptyList())
+                    TipEngine(testCatalog, FixedIndexRandom(index))
+                        .messageFor(time, recentTips = emptyList(), moreVarietyEnabled = moreVarietyEnabled)
                 }.toSet()
         assertThat(actual).isEqualTo(expectedPool.toSet())
     }
