@@ -7,13 +7,6 @@
 
     <string name="settings_title">@string/app_name</string>
 
-    <string name="settings_widget_title">Widget</string>
-    <string name="settings_widget_style_forest">Forest</string>
-    <string name="settings_widget_style_ocean">Ocean</string>
-    <string name="settings_widget_style_sunset">Sunset</string>
-    <string name="settings_widget_style_midnight">Midnight</string>
-    <string name="settings_widget_preview_tip">Stand up and stretch for a moment.</string>
-
     <string name="settings_tip_source_title">Why this tip?</string>
     <string name="settings_tip_source_quote">“%1$s”</string>
     <string name="settings_tip_source_action">Read the source</string>

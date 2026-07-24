@@ -26,16 +26,23 @@ class TipEngine(
      * [recentTips] are the most recently shown tips, across widget refreshes and
      * notifications combined, oldest first — excluded here so none of them repeats within
      * that span (see [TipHistoryRepository.MAX_RECENT_TIPS]).
+     *
+     * [manual] distinguishes an explicit user request for a new tip (a widget tap, the
+     * Settings refresh button) from the passive scheduled rotation. The passive rotation's
+     * fixed sleep-hours messages are deliberately exempt from anti-repeat (there's only one
+     * possible message for each), but that exemption made a manual tap during those ~7 hours
+     * (23:00-05:59) a silent no-op — the same fixed message came back every time, with no way
+     * for the user to see it actually changed. A manual advance always draws from the general
+     * pool instead, so tapping visibly does something regardless of time of day.
      */
     fun messageFor(
         time: LocalTime,
         recentTips: List<String>,
+        manual: Boolean = false,
     ): Tip =
         when (dayPartFor(time)) {
-            // Fixed, single-message reminders are not drawn from a rotating pool — there is
-            // only ever one possible message for each — so they are exempt from anti-repeat.
-            DayPart.SLEEP_LATE -> catalog.sleepLate
-            DayPart.SLEEP_EARLY_HOURS -> catalog.sleepEarlyHours
+            DayPart.SLEEP_LATE -> if (manual) pick(catalog.general, recentTips) else catalog.sleepLate
+            DayPart.SLEEP_EARLY_HOURS -> if (manual) pick(catalog.general, recentTips) else catalog.sleepEarlyHours
             DayPart.MORNING -> pick(catalog.general + catalog.morning, recentTips)
             DayPart.AFTERNOON -> pick(catalog.general + catalog.afternoon, recentTips)
             DayPart.EVENING -> pick(catalog.general + catalog.evening, recentTips)

@@ -17,7 +17,6 @@ class SettingsActivity : ComponentActivity() {
             HealthWidgetTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     SettingsScreen(
-                        settingsRepository = container.settingsRepository,
                         tipHistoryRepository = container.tipHistoryRepository,
                         tipEngine = container.tipEngine,
                     )

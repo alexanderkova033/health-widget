@@ -1,6 +1,6 @@
 # Project status
 
-_Last updated: 2026-07-24 (later still)_
+_Last updated: 2026-07-24 (even later still)_
 
 This file is a snapshot for picking the project back up — it will go stale; check `git log`
 and the repo itself for anything that matters more than this doc.
@@ -209,6 +209,47 @@ Two follow-up passes after the initial build-out:
     tests above and the `NudgeWorker` bug fix remain. If Android-side test coverage is wanted
     later, the approach above (documented here in case it's picked back up) worked and all
     tests passed before being removed.
+- **`fix:` tap-to-refresh sleep-hours bug, widget background now follows the tip, background
+  picker removed from Settings, bigger gear icon (2026-07-24, later still)** — by request:
+  - **Found and fixed the real cause of "tapping the widget doesn't change the quote."**
+    `TipEngine.messageFor` returns a single fixed message for the two sleep day parts
+    (`DayPart.SLEEP_LATE` 23:00, `DayPart.SLEEP_EARLY_HOURS` 00:00-05:59) with no
+    randomization at all — by design, for the *passive* scheduled rotation (there's only one
+    possible message for each, so anti-repeat doesn't apply). But that exemption also applied
+    to an explicit tap, so tapping the widget (or the Settings refresh button) during that
+    ~7-hour window was a silent no-op: the same fixed text came back every time. Fixed by
+    adding a `manual: Boolean = false` parameter to `TipEngine.messageFor` and
+    `AdvanceTipUseCase.invoke`: when `true` (now passed by `RefreshTipAction` and the
+    Settings screen's refresh button), the sleep day parts draw from the general pool instead
+    of the fixed message. The passive worker (`WidgetRefreshWorker`) and the widget's
+    first-render fallback keep the default `false`, so the wind-down message still shows
+    normally when nothing was explicitly requested. Covered by new tests in
+    `TipEngineTest`/`AdvanceTipUseCaseTest`.
+  - **The widget's background is now tied to the current tip, not a stored preference** — by
+    request ("there is a bug that changes the background when a different tip appears - keep
+    it and make it a feature"). New `WidgetStyle.forTip(tipText: String)` (`:core`,
+    `Math.floorMod(tipText.hashCode(), 4)`) deterministically maps a tip's text to one of the
+    four existing styles: the same tip always renders the same background, and a different
+    tip (almost always) means a different one. `TipWidget.provideGlance` now calls
+    `WidgetStyle.forTip(tip)` instead of reading a persisted setting.
+  - **Background choice removed from Settings** — with nothing left to persist, the entire
+    settings-persistence layer was deleted: `AppSettings`, `SettingsRepository`,
+    `DataStoreSettingsRepository` (+ its test and DataStore key), and `WidgetSection`/
+    `WidgetPreview`/`StyleSwatch`/`WidgetBackgroundImage` from `SettingsScreen.kt`.
+    `AppContainer` no longer exposes a `settingsRepository`. `SettingsScreen` now takes just
+    `tipHistoryRepository`/`tipEngine`. README/PRIVACY.md updated to match (mermaid diagram,
+    module descriptions, stored-data list).
+  - **Widget's settings gear icon made slightly bigger** — `20.dp` to `24.dp` in
+    `TipWidget.kt` (padding unchanged at `6.dp`).
+  - Verified via `:core` test (41 tests, up from 37 — new `WidgetStyleTest` plus the new
+    manual-advance cases), `:app` test (5 tests per variant, unchanged), `ktlintCheck`,
+    `lint` (0 errors, 17 pre-existing warnings, same as before), and a full `build` including
+    `assembleRelease` with R8 minification — all green, against the same JDK 17 + Android SDK
+    scratch setup as prior passes. **Not yet verified on a physical device** — this session
+    did not have device/adb access either; the sleep-hours tap fix in particular needs a
+    real on-device tap during 23:00-05:59 (or a temporarily-adjusted system clock) to confirm,
+    and the tip-follows-background behavior needs eyes-on confirmation that it reads as a
+    deliberate visual refresh rather than a jarring flicker.
 - **`feat:` notifications removed entirely, tip advancement retimed to ~90 minutes of
   confirmed screen-on time, and the widget-refresh race fixed for real (2026-07-24, later
   still)** — by request ("I don't want the app to create distractions"):
@@ -352,25 +393,22 @@ Two follow-up passes after the initial build-out:
 
 ## In progress right now
 
-The notifications-removal/tip-retiming/widget-refresh-race-fix pass (see above) is code-
-complete and build-verified (`ktlintCheck`, `test`, `lint` 0 errors, full `build` including
-`assembleRelease`), but **not yet installed or exercised on the physical device** — this
-session did not have device access. Three things specifically need a real on-device pass
-before this can be considered done, in rough priority order:
+The tap-to-refresh-sleep-hours-fix/tip-linked-background pass (see above) is code-complete
+and build-verified (`ktlintCheck`, `test`, `lint` 0 errors, full `build` including
+`assembleRelease`), but **not yet exercised on the physical device** — this session, like
+the one before it, did not have device/adb access. Things that specifically need a real
+on-device pass before this can be considered done, in rough priority order:
 
-1. **The widget-background race fix** (`AppContainer.refreshWidget()`'s `Mutex`) is the one
-   that matters most to re-verify, since the bug it targets was confirmed still happening
-   *intermittently* even after the previous fix — an inconsistent bug needs repeated,
-   deliberate reproduction attempts (tap the widget itself, change style in Settings, and
-   hit manual tip-refresh in quick, overlapping succession) to have confidence it's actually
-   gone, not just that it didn't happen to reproduce once.
-2. **The retimed tip advancement** — confirm the tip does *not* change while the screen has
-   been off, and does change once you've had the screen on for a cumulative ~90 minutes
-   since it last changed. Slow to verify at real speed; consider temporarily lowering
-   `TICKS_UNTIL_ADVANCE`/`TICK_INTERVAL_MINUTES` (`core/scheduling/TipRefreshSchedule.kt`)
-   for a faster manual test loop, then reverting before shipping.
-3. **The widget's own tap-to-refresh action and gear-icon settings shortcut** (both shipped
-   in the checkpoint commit just before this pass, never confirmed on-screen either).
+1. **The tap-to-refresh fix** — confirm tapping the widget card changes the tip during
+   ordinary daytime hours (should have always worked) *and* during 23:00-05:59 (the bug just
+   fixed; easiest to check by temporarily setting the device clock into that window, then
+   reverting it).
+2. **The tip-linked background** — confirm a tip change (via tap, the Settings refresh
+   button, or the periodic worker) visibly changes the card's background style, and that it
+   reads as an intentional refresh rather than a jarring flicker.
+3. Everything carried over unverified from the previous pass below is still open: the widget-
+   background race fix, the retimed ~90-minute tip advancement, and the original tap-to-
+   refresh/gear-icon shortcut.
 
 Two methodological notes for next time:
 - While both this session and the user were sending input to the same phone at once (adb

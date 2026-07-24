@@ -16,7 +16,6 @@ data, usage data, or analytics of any kind.
 The app stores a small amount of data **only on your device**, using Android's local
 DataStore mechanism:
 
-- Your widget background style setting.
 - The most recently shown tips (up to the last 30), so the same one doesn't come up again
   too soon.
 

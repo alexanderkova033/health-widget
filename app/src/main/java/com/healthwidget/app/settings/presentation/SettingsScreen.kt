@@ -4,11 +4,8 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.widget.ImageView
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -19,17 +16,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Science
 import androidx.compose.material.icons.filled.Shield
-import androidx.compose.material.icons.filled.Widgets
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -41,28 +35,18 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
 import com.healthwidget.app.HealthWidgetApp
 import com.healthwidget.app.R
-import com.healthwidget.app.widget.backgroundDrawableRes
-import com.healthwidget.core.settings.AppSettings
-import com.healthwidget.core.settings.SettingsRepository
-import com.healthwidget.core.settings.WidgetStyle
 import com.healthwidget.core.tips.Tip
 import com.healthwidget.core.tips.TipEngine
 import com.healthwidget.core.tips.TipHistoryRepository
@@ -72,30 +56,16 @@ import java.time.LocalTime
 
 @Composable
 fun SettingsScreen(
-    settingsRepository: SettingsRepository,
     tipHistoryRepository: TipHistoryRepository,
     tipEngine: TipEngine,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    var settings by remember { mutableStateOf(AppSettings.DEFAULT) }
     var lastTipText by remember { mutableStateOf<String?>(null) }
-
-    LaunchedEffect(settingsRepository) {
-        settingsRepository.settings.collectLatest { settings = it }
-    }
 
     LaunchedEffect(tipHistoryRepository) {
         tipHistoryRepository.recentTips.collectLatest { recent ->
             lastTipText = recent.lastOrNull()
-        }
-    }
-
-    fun changeWidgetStyle(style: WidgetStyle) {
-        scope.launch {
-            settingsRepository.setWidgetStyle(style)
-            refreshWidgetNow(context)
         }
     }
 
@@ -118,13 +88,6 @@ fun SettingsScreen(
             Text(text = stringResource(R.string.settings_title), style = MaterialTheme.typography.titleLarge)
         }
 
-        SectionCard {
-            WidgetSection(
-                style = settings.widgetStyle,
-                onStyleChange = { changeWidgetStyle(it) },
-            )
-        }
-
         lastTipText?.let { text ->
             SectionCard {
                 TipSourceSection(
@@ -141,29 +104,20 @@ fun SettingsScreen(
     }
 }
 
-/**
- * Re-renders the widget right away (new style, or a manually refreshed tip). Launched in
+/** Picks a new tip out of turn (same selection/anti-repeat logic as the scheduled refresh —
+ * see [com.healthwidget.core.tips.TipEngine.messageFor]'s `manual` parameter) and pushes it,
+ * plus the background style that now follows it, to the widget immediately. Launched in
  * [HealthWidgetApp.applicationScope] rather than this screen's own coroutine scope: the
  * latter is cancelled if the user navigates away before the Glance composition finishes,
  * which previously left the widget's Glance session stuck until the app was force-restarted.
- * Also avoids the multi-second lag of routing through a WorkManager job for what the user
- * expects to see change instantly. Goes through [com.healthwidget.app.AppContainer.refreshWidget]
- * (not `TipWidget().updateAll()` directly) so this can't race the periodic tick worker or the
- * widget's own tap-to-refresh action and leave a stale render on screen.
+ * Goes through [com.healthwidget.app.AppContainer.refreshWidget] (not `TipWidget().updateAll()`
+ * directly) so this can't race the periodic tick worker or the widget's own tap-to-refresh
+ * action and leave a stale render on screen.
  */
-private fun refreshWidgetNow(context: Context) {
-    val app = context.applicationContext as HealthWidgetApp
-    app.applicationScope.launch {
-        app.container.refreshWidget()
-    }
-}
-
-/** Picks a new tip out of turn (same selection/anti-repeat logic as the scheduled refresh)
- * and pushes it to the widget immediately. */
 private fun refreshTipNow(context: Context) {
     val app = context.applicationContext as HealthWidgetApp
     app.applicationScope.launch {
-        app.container.advanceTip(LocalTime.now())
+        app.container.advanceTip(LocalTime.now(), manual = true)
         app.container.refreshWidget()
     }
 }
@@ -180,119 +134,6 @@ private fun SectionCard(content: @Composable ColumnScope.() -> Unit) {
         Column(modifier = Modifier.padding(20.dp), content = content)
     }
 }
-
-@Composable
-private fun WidgetSection(
-    style: WidgetStyle,
-    onStyleChange: (WidgetStyle) -> Unit,
-) {
-    SectionTitle(icon = Icons.Filled.Widgets, text = stringResource(R.string.settings_widget_title))
-    WidgetPreview(style)
-    Spacer(Modifier.height(16.dp))
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceEvenly,
-    ) {
-        WidgetStyle.entries.forEach { candidate ->
-            StyleSwatch(
-                style = candidate,
-                label = candidate.label(),
-                selected = candidate == style,
-                onClick = { onStyleChange(candidate) },
-            )
-        }
-    }
-}
-
-/** Renders the real widget background drawable rather than a hand-picked two-colour brush, so
- * this preview never drifts from what actually ends up on the home screen. */
-@Composable
-private fun WidgetPreview(style: WidgetStyle) {
-    Box(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .height(120.dp)
-                .shadow(elevation = 6.dp, shape = RoundedCornerShape(20.dp))
-                .clip(RoundedCornerShape(20.dp)),
-        contentAlignment = Alignment.Center,
-    ) {
-        WidgetBackgroundImage(style, modifier = Modifier.matchParentSize())
-        Text(
-            text = stringResource(R.string.settings_widget_preview_tip),
-            color = Color.White,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center,
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(horizontal = 24.dp),
-        )
-    }
-}
-
-@Composable
-private fun StyleSwatch(
-    style: WidgetStyle,
-    label: String,
-    selected: Boolean,
-    onClick: () -> Unit,
-) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Box(
-            modifier =
-                Modifier
-                    .size(56.dp)
-                    .shadow(elevation = if (selected) 4.dp else 0.dp, shape = CircleShape)
-                    .clip(CircleShape)
-                    .border(
-                        width = if (selected) 3.dp else 1.dp,
-                        color =
-                            if (selected) {
-                                MaterialTheme.colorScheme.primary
-                            } else {
-                                MaterialTheme.colorScheme.outlineVariant
-                            },
-                        shape = CircleShape,
-                    ).clickable(onClick = onClick),
-            contentAlignment = Alignment.Center,
-        ) {
-            WidgetBackgroundImage(style, modifier = Modifier.matchParentSize())
-            if (selected) {
-                Icon(
-                    imageVector = Icons.Filled.Check,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(20.dp),
-                )
-            }
-        }
-        Spacer(Modifier.height(4.dp))
-        Text(text = label, style = MaterialTheme.typography.labelSmall)
-    }
-}
-
-/** [style]'s actual widget background drawable (a layered gradient `layer-list`, not a plain
- * two-stop gradient) via classic View interop — Compose's own `painterResource` only handles
- * vector/raster drawables, not `<layer-list>`/`<shape>` resources. */
-@Composable
-private fun WidgetBackgroundImage(
-    style: WidgetStyle,
-    modifier: Modifier = Modifier,
-) {
-    AndroidView(
-        factory = { ctx -> ImageView(ctx).apply { scaleType = ImageView.ScaleType.CENTER_CROP } },
-        update = { it.setImageResource(style.backgroundDrawableRes()) },
-        modifier = modifier,
-    )
-}
-
-@Composable
-private fun WidgetStyle.label(): String =
-    when (this) {
-        WidgetStyle.FOREST -> stringResource(R.string.settings_widget_style_forest)
-        WidgetStyle.OCEAN -> stringResource(R.string.settings_widget_style_ocean)
-        WidgetStyle.SUNSET -> stringResource(R.string.settings_widget_style_sunset)
-        WidgetStyle.MIDNIGHT -> stringResource(R.string.settings_widget_style_midnight)
-    }
 
 /**
  * [source] is a best-effort lookup ([TipEngine.findByText] matching the persisted plain-text

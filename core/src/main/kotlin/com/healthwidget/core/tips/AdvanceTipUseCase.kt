@@ -27,10 +27,16 @@ class AdvanceTipUseCase(
 ) {
     private val mutex = Mutex()
 
-    suspend operator fun invoke(now: LocalTime): Tip =
+    /** [manual] should be `true` for an explicit user request for a new tip (widget tap,
+     * Settings refresh button) and left `false` for the passive scheduled rotation — see
+     * [TipEngine.messageFor]. */
+    suspend operator fun invoke(
+        now: LocalTime,
+        manual: Boolean = false,
+    ): Tip =
         mutex.withLock {
             val recentTips = tipHistoryRepository.recentTips.first()
-            val tip = tipEngine.messageFor(now, recentTips)
+            val tip = tipEngine.messageFor(now, recentTips, manual)
             tipHistoryRepository.recordTip(tip.text)
             tip
         }

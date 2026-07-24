@@ -79,6 +79,28 @@ class TipEngineTest {
     }
 
     @Test
+    fun `manual sleep-late request draws from the general pool instead of the fixed message`() {
+        val engine = TipEngine(testCatalog, FixedIndexRandom(0))
+        val message = engine.messageFor(LocalTime.of(23, 30), recentTips = emptyList(), manual = true)
+        assertThat(message).isEqualTo(testCatalog.general[0])
+    }
+
+    @Test
+    fun `manual sleep-early-hours request draws from the general pool instead of the fixed message`() {
+        val engine = TipEngine(testCatalog, FixedIndexRandom(0))
+        val message = engine.messageFor(LocalTime.of(2, 0), recentTips = emptyList(), manual = true)
+        assertThat(message).isEqualTo(testCatalog.general[0])
+    }
+
+    @Test
+    fun `manual sleep-hours request still honors anti-repeat`() {
+        val engine = TipEngine(testCatalog, Random.Default)
+        val recentTips = listOf("G1", "G2", "G3")
+        val message = engine.messageFor(LocalTime.of(23, 30), recentTips, manual = true)
+        assertThat(message.text).isEqualTo("G4")
+    }
+
+    @Test
     fun `excludes every tip in recentTips, not just the most recent one`() {
         val engine = TipEngine(testCatalog, Random.Default)
         // Morning pool is G1-G4, M1-M2 (6 members); excluding all but M2 must deterministically

@@ -71,6 +71,28 @@ class AdvanceTipUseCaseTest {
         }
 
     @Test
+    fun `a manual advance during sleep hours does not return the fixed sleep message`() =
+        runTest {
+            val repository = FakeTipHistoryRepository()
+            val advanceTip = AdvanceTipUseCase(TipEngine(catalog, Random(seed = 3)), repository)
+
+            val tip = advanceTip(LocalTime.of(23, 30), manual = true)
+
+            assertThat(tip.text).isNotEqualTo("Sleep late")
+        }
+
+    @Test
+    fun `a non-manual advance during sleep hours returns the fixed sleep message`() =
+        runTest {
+            val repository = FakeTipHistoryRepository()
+            val advanceTip = AdvanceTipUseCase(TipEngine(catalog, Random(seed = 3)), repository)
+
+            val tip = advanceTip(LocalTime.of(23, 30))
+
+            assertThat(tip.text).isEqualTo("Sleep late")
+        }
+
+    @Test
     fun `concurrent advances from the same instance never select the same tip twice, up to pool size`() =
         runTest {
             // A pool exactly as large as the number of concurrent callers: if every call is

@@ -41,9 +41,10 @@ v1 is intentionally passive — no notifications of any kind:
 - The tip advances on its own after it's actually had a chance to be seen — roughly every 90
   minutes of confirmed screen-on time since it was last shown, not a pure wall-clock timer
   that could rotate a tip nobody ever looked at (see "Notable design decisions" below).
-- Four selectable widget background styles (Forest, Ocean, Sunset, Midnight), previewed live
-  in Settings — the preview renders the same drawable the widget itself uses, so it never
-  drifts from the real thing.
+- The widget's background is one of four styles (Forest, Ocean, Sunset, Midnight),
+  deterministically derived from the currently-shown tip's text (`WidgetStyle.forTip`) rather
+  than a user preference — a new tip means a new-looking card, not just new text. Not
+  user-selectable; there's nothing to configure in Settings.
 - A "Why this tip?" card in Settings showing the current tip's citation, with a button that
   opens the primary source in the browser, and a button to pull a different tip on demand.
 - The same tip never repeats within the last 30 shown.
@@ -68,19 +69,21 @@ architecture) rather than on each other's concrete classes:
     than just the single previous one, and `TipEngine` excludes all of them when picking the
     next tip. `TipEngine.findByText` resolves a persisted tip's text back to its full `Tip`
     (citation included) for the settings screen to display.
-  - `settings/` — the `AppSettings` model (currently just widget style) and
-    `SettingsRepository` interface.
+  - `settings/` — just `WidgetStyle`, the four background styles and `WidgetStyle.forTip`,
+    the pure hash-based mapping from a tip's text to one of them. Not backed by a repository
+    any more — there's no user preference left to persist, so nothing here is stored.
   - `scheduling/` — `TipRefreshSchedule` (`shouldAdvanceTip`, the tick-threshold math behind
     the ~90-minutes-of-screen-on-time tip advance) and `WidgetRefreshRepository` (interface),
     the persisted screen-on tick counter (see "Notable design decisions" below).
   Everything here is trivially unit-testable and reusable as-is by a future iOS port.
 - **`:app`** — the Android application, organized by feature rather than by technical
-  layer (`settings/`, `tips/`, `widget/`, `boot/`). `settings/`, `tips/`, and `widget/` each
-  have a `data/` sub-package with the DataStore-backed implementation of the matching
-  `:core` interface (`DataStoreSettingsRepository`, `DataStoreTipHistoryRepository`,
-  `DataStoreWidgetRefreshRepository`) — dependents (workers, `AppContainer`, the settings
-  screen) hold the `:core` interface type, never the concrete DataStore class, per the
-  Dependency Inversion Principle.
+  layer (`settings/`, `tips/`, `widget/`, `boot/`). `tips/` and `widget/` each have a `data/`
+  sub-package with the DataStore-backed implementation of the matching `:core` interface
+  (`DataStoreTipHistoryRepository`, `DataStoreWidgetRefreshRepository`) — dependents (workers,
+  `AppContainer`, the settings screen) hold the `:core` interface type, never the concrete
+  DataStore class, per the Dependency Inversion Principle. `settings/` has no `data/`
+  sub-package: `presentation/` (`SettingsActivity`, `SettingsScreen`) is all there is, since
+  there's no setting left to persist.
 
 ```mermaid
 graph TD
@@ -93,8 +96,7 @@ graph TD
             AdvanceTipUseCase
         end
         subgraph coreSettings["settings"]
-            AppSettings
-            SettingsRepository["SettingsRepository (interface)"]
+            WidgetStyle["WidgetStyle (forTip)"]
         end
         subgraph coreScheduling["scheduling"]
             TipRefreshSchedule["shouldAdvanceTip"]
@@ -104,7 +106,6 @@ graph TD
 
     subgraph app["app (Android — organized by feature, not by layer)"]
         subgraph settingsFeature["settings"]
-            DataStoreSettingsRepository["data/DataStoreSettingsRepository"]
             SettingsActivity["presentation/SettingsActivity"]
             SettingsScreen["presentation/SettingsScreen"]
         end
@@ -123,10 +124,8 @@ graph TD
         DataStore[("DataStore<Preferences>")]
     end
 
-    DataStoreSettingsRepository -.implements.-> SettingsRepository
     DataStoreTipHistoryRepository -.implements.-> TipHistoryRepository
     DataStoreWidgetRefreshRepository -.implements.-> WidgetRefreshRepository
-    DataStoreSettingsRepository --> DataStore
     DataStoreTipHistoryRepository --> DataStore
     DataStoreWidgetRefreshRepository --> DataStore
     TipCatalog --> Tip
@@ -134,7 +133,6 @@ graph TD
     AdvanceTipUseCase --> TipEngine
     AdvanceTipUseCase --> TipHistoryRepository
 
-    SettingsScreen --> SettingsRepository
     SettingsScreen --> TipHistoryRepository
     SettingsScreen --> TipEngine
     SettingsScreen --> AppContainer
@@ -146,6 +144,7 @@ graph TD
     RefreshTipAction --> AppContainer
     TipWidget --> AdvanceTipUseCase
     TipWidget --> TipHistoryRepository
+    TipWidget --> WidgetStyle
     AppContainer --> TipWidget
 
     BootReceiver --> WidgetScheduler
@@ -178,15 +177,26 @@ Notable design decisions:
   the old unsynchronized version.
 - **Concurrency-safe widget rendering**: pushing the widget's actual UI
   (`GlanceAppWidget.updateAll()`) is a separate step from picking the tip, and has its own
-  equivalent race — four independent triggers (the periodic tick worker, a style change, the
-  manual "get a different tip" button, tapping the widget itself) can call it with no
-  ordering guarantee between them, and two overlapping calls can finish out of order and
-  leave a stale render on screen (the real cause of the widget's background/tip only
-  *sometimes* updating correctly). `AppContainer.refreshWidget()` wraps the push in its own
-  `Mutex`, serializing every trigger through one call site. Each call still re-reads the
-  current settings/tip from DataStore at execution time rather than capturing a snapshot up
-  front, so serializing just matters for the push itself: whichever call runs last always
-  renders whatever is actually persisted, regardless of which trigger queued first.
+  equivalent race — three independent triggers (the periodic tick worker, the manual "get a
+  different tip" button, tapping the widget itself) can call it with no ordering guarantee
+  between them, and two overlapping calls can finish out of order and leave a stale render on
+  screen (the real cause of the widget's background/tip only *sometimes* updating correctly).
+  `AppContainer.refreshWidget()` wraps the push in its own `Mutex`, serializing every trigger
+  through one call site. Each call still re-reads the current tip from DataStore at execution
+  time rather than capturing a snapshot up front, so serializing just matters for the push
+  itself: whichever call runs last always renders whatever is actually persisted, regardless
+  of which trigger queued first.
+- **A manual tip request always visibly changes something.** `TipEngine.messageFor`'s fixed,
+  single-message sleep-hours tips (23:00-05:59) are exempt from anti-repeat by design for the
+  passive scheduled rotation — there's only one possible message for each, so there's nothing
+  to rotate. But that made an explicit tap-to-refresh (or the Settings refresh button) during
+  those ~7 hours a silent no-op: the same fixed message came back every time with no visible
+  change. `messageFor`/`AdvanceTipUseCase.invoke` now take a `manual` flag; when `true`, the
+  sleep-hours day parts draw from the general pool instead of the fixed message, so an
+  explicit request always changes the tip (and, since the background now follows the tip,
+  the background too) regardless of time of day. The passive worker-driven rotation is
+  untouched (`manual` defaults to `false`), so the wind-down message still shows normally
+  when nobody asked for anything.
 - The Glance widget's `updatePeriodMillis` is set to `0`; refresh is driven entirely by
   `WidgetScheduler`'s own 15-minute WorkManager periodic job (see the tip-advance tick model
   above), since the AppWidget framework's own update period has an unreliable 30-minute floor.
@@ -199,11 +209,10 @@ Notable design decisions:
 - There's no DI framework (`AppContainer` is a hand-written composition root) and no
   ViewModel (the settings screen collects `Flow`s directly) — both are deliberately skipped
   as unnecessary weight for an app this size, not oversights.
-- The widget's background is rendered from the real `<layer-list>` drawable resource via
-  `AndroidView`/`ImageView` interop in both the widget itself (Glance `ImageProvider`) and
-  the settings screen's live preview/style swatches — Compose's own `painterResource` only
-  handles vector/raster drawables, not `<shape>`/`<layer-list>` resources, and a hand-picked
-  `Brush.linearGradient` stand-in would drift from the real widget over time.
+- The widget's background is one of four real `<layer-list>` drawable resources, selected by
+  `WidgetStyle.forTip` (`Math.floorMod(tipText.hashCode(), 4)`) rather than a stored
+  preference — the same tip text always renders the same style, and there's no Settings UI
+  for it any more since there's nothing left to choose.
 - **Backup policy**: the app opts in to Android's built-in backup system and explicitly
   includes settings + tip history in both `backup_rules.xml` (legacy, API < 31) and
   `data_extraction_rules.xml` (API 31+) — chosen over excluding this data, since it's the

@@ -60,7 +60,7 @@ class TipWidget : GlanceAppWidget() {
         val container = (context.applicationContext as HealthWidgetApp).container
         val existingTip = container.tipHistoryRepository.recentTips.first().lastOrNull()
         val tip = existingTip ?: container.advanceTip(LocalTime.now()).text
-        val style = container.settingsRepository.settings.first().widgetStyle
+        val style = WidgetStyle.forTip(tip)
 
         provideContent {
             GlanceTheme {
@@ -70,7 +70,7 @@ class TipWidget : GlanceAppWidget() {
     }
 }
 
-internal fun WidgetStyle.backgroundDrawableRes(): Int =
+private fun WidgetStyle.backgroundDrawableRes(): Int =
     when (this) {
         WidgetStyle.FOREST -> R.drawable.widget_quote_background
         WidgetStyle.OCEAN -> R.drawable.widget_background_ocean
@@ -116,7 +116,7 @@ private fun TipWidgetContent(
                         GlanceModifier
                             .clickable(actionStartActivity(Intent(context, SettingsActivity::class.java)))
                             .padding(6.dp)
-                            .size(20.dp),
+                            .size(24.dp),
                 )
             }
             Box(
@@ -133,21 +133,33 @@ private fun TipWidgetContent(
                             TextStyle(
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = ColorProvider(Color.White.copy(alpha = 0.55f)),
+                                color = ColorProvider(Color.White.copy(alpha = 0.6f)),
                             ),
                     )
                     Spacer(GlanceModifier.height(4.dp))
-                    Text(
-                        text = tip,
-                        maxLines = 5,
-                        style =
-                            TextStyle(
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold,
-                                textAlign = TextAlign.Center,
-                                color = ColorProvider(Color.White),
-                            ),
-                    )
+                    // A translucent "chip" behind the tip, rather than bare text over the
+                    // gradient/art: guarantees contrast no matter where on the gradient (or
+                    // over which piece of background art) the text lands, and gives the tip
+                    // its own visible frame instead of floating loose over the artwork.
+                    Box(
+                        modifier =
+                            GlanceModifier
+                                .background(ColorProvider(Color.Black.copy(alpha = 0.22f)))
+                                .cornerRadius(14.dp)
+                                .padding(horizontal = 14.dp, vertical = 6.dp),
+                    ) {
+                        Text(
+                            text = tip,
+                            maxLines = 5,
+                            style =
+                                TextStyle(
+                                    fontSize = 17.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    textAlign = TextAlign.Center,
+                                    color = ColorProvider(Color.White),
+                                ),
+                        )
+                    }
                     Spacer(GlanceModifier.height(10.dp))
                     Text(
                         // Derived from the centralized app_name resource (rather than a second
@@ -156,10 +168,10 @@ private fun TipWidgetContent(
                         text = context.getString(R.string.app_name).uppercase(),
                         style =
                             TextStyle(
-                                fontSize = 10.sp,
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Medium,
                                 textAlign = TextAlign.Center,
-                                color = ColorProvider(Color.White.copy(alpha = 0.6f)),
+                                color = ColorProvider(Color.White.copy(alpha = 0.65f)),
                             ),
                     )
                 }
