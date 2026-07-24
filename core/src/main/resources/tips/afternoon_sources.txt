@@ -1,0 +1,24 @@
+# Citation for each line in afternoon.txt, same order, one per line: Label<TAB>URL.
+# See TIP_SOURCES.md at the repo root for the full research writeup behind each of these.
+Monk, The Post-Lunch Dip in Performance, Chronobiology International	https://www.semanticscholar.org/paper/The-post-lunch-dip-in-performance.-Monk/2a637623cc562fffcddf9aa8c41e41ef2069f3e1
+Attention Restoration Theory, systematic review (ECEHH)	https://www.ecehh.org/research/attention-restoration-theory-a-systematic-review/
+Ganio et al., British Journal of Nutrition, 2011	https://www.cambridge.org/core/journals/british-journal-of-nutrition/article/mild-dehydration-impairs-cognitive-performance-and-mood-of-men/3388AB36B8DF73E844C9AD19271A75BF
+Monk, The Post-Lunch Dip in Performance, Chronobiology International	https://www.semanticscholar.org/paper/The-post-lunch-dip-in-performance.-Monk/2a637623cc562fffcddf9aa8c41e41ef2069f3e1
+Ariga & Lleras, Cognition, 2011	https://www.sciencedaily.com/releases/2011/02/110208131529.htm
+Biswas et al., Annals of Internal Medicine, 2015	https://www.sedentarybehaviour.org/2015/03/11/author-summary-of-sedentary-time-and-its-association-with-risk-for-disease-incidence-mortality-and-hospitalization-in-adults-paper-published-in-the-annals-of-internal-medicine-20/
+Light intervention and the post-lunch dip, PubMed	https://pubmed.ncbi.nlm.nih.gov/30369519/
+Attention Restoration Theory, systematic review (ECEHH)	https://www.ecehh.org/research/attention-restoration-theory-a-systematic-review/
+Perceived musculoskeletal discomfort during prolonged sitting, ScienceDirect	https://www.sciencedirect.com/science/article/abs/pii/S0003687020301770
+Drake et al., J. Clinical Sleep Medicine, 2013	https://jcsm.aasm.org/doi/10.5664/jcsm.3170
+Biswas et al., Annals of Internal Medicine, 2015	https://www.sedentarybehaviour.org/2015/03/11/author-summary-of-sedentary-time-and-its-association-with-risk-for-disease-incidence-mortality-and-hospitalization-in-adults-paper-published-in-the-annals-of-internal-medicine-20/
+Attention Restoration Theory, systematic review (ECEHH)	https://www.ecehh.org/research/attention-restoration-theory-a-systematic-review/
+Sleep Foundation: NASA Nap	https://www.sleepfoundation.org/sleep-hygiene/nasa-nap
+AOA & AOA: The 20-20-20 rule for digital eye strain	https://www.aoa.org/AOA/Images/Patients/Eye%20Conditions/20-20-20-rule.pdf
+Slow breathing & heart-rate variability, systematic review	https://www.sciencedirect.com/science/article/abs/pii/S0149763422002007
+Ariga & Lleras, Cognition, 2011	https://www.sciencedaily.com/releases/2011/02/110208131529.htm
+Drake et al., J. Clinical Sleep Medicine, 2013	https://jcsm.aasm.org/doi/10.5664/jcsm.3170
+Sleep Foundation: Does Napping Impact Sleep at Night?	https://www.sleepfoundation.org/how-sleep-works/does-napping-impact-sleep-at-night
+Light intervention and the post-lunch dip, PubMed	https://pubmed.ncbi.nlm.nih.gov/30369519/
+Reactive hypoglycemia overview, Wikipedia	https://en.wikipedia.org/wiki/Reactive_hypoglycemia
+Biswas et al., Annals of Internal Medicine, 2015	https://www.sedentarybehaviour.org/2015/03/11/author-summary-of-sedentary-time-and-its-association-with-risk-for-disease-incidence-mortality-and-hospitalization-in-adults-paper-published-in-the-annals-of-internal-medicine-20/
+Cognitive demand, digital screens and blink rate, ScienceDirect	https://www.sciencedirect.com/science/article/abs/pii/S0747563215003829

@@ -8,7 +8,6 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.healthwidget.core.settings.AppSettings
 import com.healthwidget.core.settings.SettingsRepository
-import com.healthwidget.core.settings.WidgetRefreshInterval
 import com.healthwidget.core.settings.WidgetStyle
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -48,10 +47,6 @@ class DataStoreSettingsRepository(private val dataStore: DataStore<Preferences>)
         dataStore.edit { it[Keys.WIDGET_STYLE] = style.name }
     }
 
-    override suspend fun setWidgetRefreshInterval(interval: WidgetRefreshInterval) {
-        dataStore.edit { it[Keys.WIDGET_REFRESH_INTERVAL] = interval.name }
-    }
-
     private fun Preferences.toAppSettings(): AppSettings =
         AppSettings(
             notificationFrequency = this[Keys.NOTIFICATION_FREQUENCY] ?: AppSettings.DEFAULT.notificationFrequency,
@@ -61,9 +56,6 @@ class DataStoreSettingsRepository(private val dataStore: DataStore<Preferences>)
             quietHoursEnd =
                 this[Keys.QUIET_HOURS_END]?.let(LocalTime::parse) ?: AppSettings.DEFAULT.quietHoursEnd,
             widgetStyle = this[Keys.WIDGET_STYLE]?.toEnumOrNull<WidgetStyle>() ?: AppSettings.DEFAULT.widgetStyle,
-            widgetRefreshInterval =
-                this[Keys.WIDGET_REFRESH_INTERVAL]?.toEnumOrNull<WidgetRefreshInterval>()
-                    ?: AppSettings.DEFAULT.widgetRefreshInterval,
         )
 
     private inline fun <reified T : Enum<T>> String.toEnumOrNull(): T? = enumValues<T>().firstOrNull { it.name == this }
@@ -74,6 +66,5 @@ class DataStoreSettingsRepository(private val dataStore: DataStore<Preferences>)
         val QUIET_HOURS_START = stringPreferencesKey("quiet_hours_start")
         val QUIET_HOURS_END = stringPreferencesKey("quiet_hours_end")
         val WIDGET_STYLE = stringPreferencesKey("widget_style")
-        val WIDGET_REFRESH_INTERVAL = stringPreferencesKey("widget_refresh_interval")
     }
 }

@@ -1,8 +1,63 @@
 <?xml version="1.0" encoding="utf-8"?>
-<shape xmlns:android="http://schemas.android.com/apk/res/android">
-    <gradient
-        android:angle="135"
-        android:startColor="@color/widget_sunset_start"
-        android:endColor="@color/widget_sunset_end"
-        android:type="linear" />
-</shape>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:angle="135"
+                android:startColor="@color/widget_sunset_start"
+                android:endColor="@color/widget_sunset_end"
+                android:type="linear" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:type="radial"
+                android:gradientRadius="170dp"
+                android:centerX="0.5"
+                android:centerY="1.0"
+                android:startColor="@color/widget_sunset_horizon_glow"
+                android:endColor="@android:color/transparent" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:type="radial"
+                android:gradientRadius="130dp"
+                android:centerX="0.12"
+                android:centerY="0.08"
+                android:startColor="@color/widget_sunset_bloom"
+                android:endColor="@android:color/transparent" />
+        </shape>
+    </item>
+    <item
+        android:width="2.5dp"
+        android:height="2.5dp"
+        android:gravity="bottom|left"
+        android:left="24dp"
+        android:bottom="20dp">
+        <shape android:shape="oval">
+            <solid android:color="@color/widget_sunset_ember" />
+        </shape>
+    </item>
+    <item
+        android:width="2dp"
+        android:height="2dp"
+        android:gravity="bottom|center_horizontal"
+        android:bottom="8dp">
+        <shape android:shape="oval">
+            <solid android:color="@color/widget_sunset_ember" />
+        </shape>
+    </item>
+    <item
+        android:width="1.8dp"
+        android:height="1.8dp"
+        android:gravity="bottom|right"
+        android:right="46dp"
+        android:bottom="26dp">
+        <shape android:shape="oval">
+            <solid android:color="@color/widget_sunset_ember" />
+        </shape>
+    </item>
+</layer-list>

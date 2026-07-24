@@ -12,11 +12,15 @@ import com.healthwidget.app.theme.HealthWidgetTheme
 class SettingsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val settingsRepository = (application as HealthWidgetApp).container.settingsRepository
+        val container = (application as HealthWidgetApp).container
         setContent {
             HealthWidgetTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    SettingsScreen(settingsRepository = settingsRepository)
+                    SettingsScreen(
+                        settingsRepository = container.settingsRepository,
+                        tipHistoryRepository = container.tipHistoryRepository,
+                        tipEngine = container.tipEngine,
+                    )
                 }
             }
         }

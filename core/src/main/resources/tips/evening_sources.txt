@@ -1,0 +1,25 @@
+# Citation for each line in evening.txt, same order, one per line: Label<TAB>URL.
+# See TIP_SOURCES.md at the repo root for the full research writeup behind each of these.
+Chang et al., PNAS, 2015 (light-emitting eReaders and sleep)	https://www.psu.edu/news/research/story/light-emitting-e-readers-detrimentally-shift-circadian-clock
+Chang et al., PNAS, 2015 (light-emitting eReaders and sleep)	https://www.psu.edu/news/research/story/light-emitting-e-readers-detrimentally-shift-circadian-clock
+Scullin et al., J. Exp. Psychology: General, 2018	https://news.web.baylor.edu/news/story/2018/can-writing-your-dos-help-you-doze-baylor-study-suggests-jotting-down-tasks-can
+Wood, Joseph, Lloyd & Atkins, J. Psychosomatic Research, 2009	https://pubmed.ncbi.nlm.nih.gov/19073292/
+Slow breathing & heart-rate variability, systematic review	https://www.sciencedirect.com/science/article/abs/pii/S0149763422002007
+Gooley et al., J. Clinical Endocrinology & Metabolism, 2011	https://pubmed.ncbi.nlm.nih.gov/21193540/
+10-min walk after glucose intake, Nature Scientific Reports	https://www.nature.com/articles/s41598-025-07312-y
+Sleep regularity is a stronger predictor of mortality risk, SLEEP 2024	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10782501/
+Chang et al., PNAS, 2015 (light-emitting eReaders and sleep)	https://www.psu.edu/news/research/story/light-emitting-e-readers-detrimentally-shift-circadian-clock
+Slow breathing & heart-rate variability, systematic review	https://www.sciencedirect.com/science/article/abs/pii/S0149763422002007
+Sleep Foundation: The Best Temperature for Sleep	https://www.sleepfoundation.org/bedroom-environment/best-temperature-for-sleep
+Drake et al., J. Clinical Sleep Medicine, 2013	https://jcsm.aasm.org/doi/10.5664/jcsm.3170
+Haghayegh et al., Sleep Medicine Reviews, 2019	https://www.sciencedaily.com/releases/2019/07/190719173554.html
+Meta-analysis: alcohol and subsequent sleep in healthy adults	https://www.sciencedirect.com/science/article/pii/S1087079224001345
+Bootzin stimulus control, Stanford Health Care: CBT-I	https://stanfordhealthcare.org/medical-treatments/c/cognitive-behavioral-therapy-insomnia/procedures/stimulus-control.html
+Scullin et al., J. Exp. Psychology: General, 2018	https://news.web.baylor.edu/news/story/2018/can-writing-your-dos-help-you-doze-baylor-study-suggests-jotting-down-tasks-can
+Chang et al., PNAS, 2015 (light-emitting eReaders and sleep)	https://www.psu.edu/news/research/story/light-emitting-e-readers-detrimentally-shift-circadian-clock
+Haghayegh et al., Sleep Medicine Reviews, 2019	https://www.sciencedaily.com/releases/2019/07/190719173554.html
+Gooley et al., J. Clinical Endocrinology & Metabolism, 2011	https://pubmed.ncbi.nlm.nih.gov/21193540/
+Sleep regularity is a stronger predictor of mortality risk, SLEEP 2024	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10782501/
+AJMC: Eating or drinking up to 1 hour before bedtime	https://www.ajmc.com/view/eating-or-drinking-up-to-one-hour-before-bedtime-may-impair-sleep-quality
+Wood, Joseph, Lloyd & Atkins, J. Psychosomatic Research, 2009	https://pubmed.ncbi.nlm.nih.gov/19073292/
+Bootzin stimulus control, Stanford Health Care: CBT-I	https://stanfordhealthcare.org/medical-treatments/c/cognitive-behavioral-therapy-insomnia/procedures/stimulus-control.html

@@ -1,8 +1,63 @@
 <?xml version="1.0" encoding="utf-8"?>
-<shape xmlns:android="http://schemas.android.com/apk/res/android">
-    <gradient
-        android:angle="135"
-        android:startColor="@color/widget_ocean_start"
-        android:endColor="@color/widget_ocean_end"
-        android:type="linear" />
-</shape>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:angle="135"
+                android:startColor="@color/widget_ocean_start"
+                android:endColor="@color/widget_ocean_end"
+                android:type="linear" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:type="radial"
+                android:gradientRadius="150dp"
+                android:centerX="0.5"
+                android:centerY="0.0"
+                android:startColor="@color/widget_ocean_shaft"
+                android:endColor="@android:color/transparent" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:type="radial"
+                android:gradientRadius="170dp"
+                android:centerX="0.5"
+                android:centerY="1.0"
+                android:startColor="@color/widget_ocean_depth"
+                android:endColor="@android:color/transparent" />
+        </shape>
+    </item>
+    <item
+        android:width="3.5dp"
+        android:height="3.5dp"
+        android:gravity="bottom|left"
+        android:left="34dp"
+        android:bottom="16dp">
+        <shape android:shape="oval">
+            <solid android:color="@color/widget_ocean_bubble" />
+        </shape>
+    </item>
+    <item
+        android:width="2.2dp"
+        android:height="2.2dp"
+        android:gravity="bottom|center_horizontal"
+        android:bottom="30dp">
+        <shape android:shape="oval">
+            <solid android:color="@color/widget_ocean_bubble" />
+        </shape>
+    </item>
+    <item
+        android:width="2.8dp"
+        android:height="2.8dp"
+        android:gravity="bottom|right"
+        android:right="40dp"
+        android:bottom="10dp">
+        <shape android:shape="oval">
+            <solid android:color="@color/widget_ocean_bubble" />
+        </shape>
+    </item>
+</layer-list>

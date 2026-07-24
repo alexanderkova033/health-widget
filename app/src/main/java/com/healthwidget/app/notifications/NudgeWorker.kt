@@ -32,7 +32,7 @@ class NudgeWorker(
 
         if (!QuietHours.isWithin(now, settings.quietHoursStart, settings.quietHoursEnd)) {
             val tip = container.advanceTip(now)
-            NotificationHelper.showNudge(applicationContext, tip)
+            NotificationHelper.showNudge(applicationContext, tip.text)
         }
 
         rescheduleTomorrow(settings, slot)

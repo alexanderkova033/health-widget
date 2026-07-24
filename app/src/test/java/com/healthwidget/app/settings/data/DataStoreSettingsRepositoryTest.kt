@@ -3,7 +3,6 @@ package com.healthwidget.app.settings.data
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import com.google.common.truth.Truth.assertThat
 import com.healthwidget.core.settings.AppSettings
-import com.healthwidget.core.settings.WidgetRefreshInterval
 import com.healthwidget.core.settings.WidgetStyle
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -76,12 +75,5 @@ class DataStoreSettingsRepositoryTest {
         runTest {
             repository.setWidgetStyle(WidgetStyle.MIDNIGHT)
             assertThat(repository.settings.first().widgetStyle).isEqualTo(WidgetStyle.MIDNIGHT)
-        }
-
-    @Test
-    fun `setWidgetRefreshInterval persists and is reflected in settings flow`() =
-        runTest {
-            repository.setWidgetRefreshInterval(WidgetRefreshInterval.ONE_HOUR)
-            assertThat(repository.settings.first().widgetRefreshInterval).isEqualTo(WidgetRefreshInterval.ONE_HOUR)
         }
 }

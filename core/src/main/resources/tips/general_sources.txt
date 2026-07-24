@@ -1,0 +1,42 @@
+# Citation for each line in general.txt, same order, one per line: Label<TAB>URL.
+# See TIP_SOURCES.md at the repo root for the full research writeup behind each of these.
+AOA & AOA: The 20-20-20 rule for digital eye strain	https://www.aoa.org/AOA/Images/Patients/Eye%20Conditions/20-20-20-rule.pdf
+Portello, Rosenfield & Chu, Optometry and Vision Science, 2013	https://pubmed.ncbi.nlm.nih.gov/23538437/
+Biswas et al., Annals of Internal Medicine, 2015	https://www.sedentarybehaviour.org/2015/03/11/author-summary-of-sedentary-time-and-its-association-with-risk-for-disease-incidence-mortality-and-hospitalization-in-adults-paper-published-in-the-annals-of-internal-medicine-20/
+Biswas et al., Annals of Internal Medicine, 2015	https://www.sedentarybehaviour.org/2015/03/11/author-summary-of-sedentary-time-and-its-association-with-risk-for-disease-incidence-mortality-and-hospitalization-in-adults-paper-published-in-the-annals-of-internal-medicine-20/
+Slow breathing & heart-rate variability, systematic review	https://www.sciencedirect.com/science/article/abs/pii/S0149763422002007
+UBC Visual Ergonomics: Solutions for Lighting & Eye Health	https://hr.ubc.ca/wellbeing-benefits/files/Visual-ergonomics-resources.pdf
+Ariga & Lleras, Cognition, 2011	https://www.sciencedaily.com/releases/2011/02/110208131529.htm
+Ariga & Lleras, Cognition, 2011	https://www.sciencedaily.com/releases/2011/02/110208131529.htm
+Ganio et al., British Journal of Nutrition, 2011	https://www.cambridge.org/core/journals/british-journal-of-nutrition/article/mild-dehydration-impairs-cognitive-performance-and-mood-of-men/3388AB36B8DF73E844C9AD19271A75BF
+Lundberg et al., 1999	https://pubmed.ncbi.nlm.nih.gov/10431284/
+Lundberg et al., 1999	https://pubmed.ncbi.nlm.nih.gov/10431284/
+Cornell University Ergonomics Web	https://ergo.human.cornell.edu/DEA6510/dea6512k/ergo12tips.html
+OSHA eTools: Computer Workstations	https://www.osha.gov/etools/computer-workstations/components/monitors
+Rempel et al., wrist posture and carpal tunnel pressure	https://pubmed.ncbi.nlm.nih.gov/18383144/
+Ariga & Lleras, Cognition, 2011	https://www.sciencedaily.com/releases/2011/02/110208131529.htm
+Slow breathing & heart-rate variability, systematic review	https://www.sciencedirect.com/science/article/abs/pii/S0149763422002007
+Cornell University Ergonomics Web	https://ergo.human.cornell.edu/DEA6510/dea6512k/ergo12tips.html
+Slow breathing & heart-rate variability, systematic review	https://www.sciencedirect.com/science/article/abs/pii/S0149763422002007
+Ariga & Lleras, Cognition, 2011	https://www.sciencedaily.com/releases/2011/02/110208131529.htm
+Lundberg et al., 1999	https://pubmed.ncbi.nlm.nih.gov/10431284/
+Biswas et al., Annals of Internal Medicine, 2015	https://www.sedentarybehaviour.org/2015/03/11/author-summary-of-sedentary-time-and-its-association-with-risk-for-disease-incidence-mortality-and-hospitalization-in-adults-paper-published-in-the-annals-of-internal-medicine-20/
+Cornell University Ergonomics Web	https://ergo.human.cornell.edu/DEA6510/dea6512k/ergo12tips.html
+Cornell University Ergonomics Web	https://ergo.human.cornell.edu/DEA6510/dea6512k/ergo12tips.html
+Ganio et al., British Journal of Nutrition, 2011	https://www.cambridge.org/core/journals/british-journal-of-nutrition/article/mild-dehydration-impairs-cognitive-performance-and-mood-of-men/3388AB36B8DF73E844C9AD19271A75BF
+Lundberg et al., 1999	https://pubmed.ncbi.nlm.nih.gov/10431284/
+Lundberg et al., 1999	https://pubmed.ncbi.nlm.nih.gov/10431284/
+Cornell University Ergonomics Web	https://ergo.human.cornell.edu/DEA6510/dea6512k/ergo12tips.html
+Rempel et al., wrist posture and carpal tunnel pressure	https://pubmed.ncbi.nlm.nih.gov/18383144/
+Perceived musculoskeletal discomfort during prolonged sitting, ScienceDirect	https://www.sciencedirect.com/science/article/abs/pii/S0003687020301770
+McMains & Kastner, J. Neuroscience, 2011	https://pubmed.ncbi.nlm.nih.gov/21228167/
+Biswas et al., Annals of Internal Medicine, 2015	https://www.sedentarybehaviour.org/2015/03/11/author-summary-of-sedentary-time-and-its-association-with-risk-for-disease-incidence-mortality-and-hospitalization-in-adults-paper-published-in-the-annals-of-internal-medicine-20/
+Rubinstein, Meyer & Evans, J. Exp. Psychology, 2001	https://pubmed.ncbi.nlm.nih.gov/11518143/
+Mark, Gudith & Klocke, CHI 2008	https://dl.acm.org/doi/10.1145/1357054.1357072
+Attention Restoration Theory, systematic review (ECEHH)	https://www.ecehh.org/research/attention-restoration-theory-a-systematic-review/
+Satish et al., Environmental Health Perspectives, 2012	https://newscenter.lbl.gov/2012/10/17/elevated-indoor-carbon-dioxide-impairs-decision-making-performance/
+Lundberg et al., 1999	https://pubmed.ncbi.nlm.nih.gov/10431284/
+Perceived musculoskeletal discomfort during prolonged sitting, ScienceDirect	https://www.sciencedirect.com/science/article/abs/pii/S0003687020301770
+Reinecke et al., Media Psychology, 2017	https://www.researchgate.net/publication/296623540
+Oppezzo & Schwartz, J. Exp. Psychology, 2014 (Stanford)	https://news.stanford.edu/stories/2014/04/walking-vs-sitting-042414
+Circadian phase advance from morning light, PMC	https://pmc.ncbi.nlm.nih.gov/articles/PMC7029701/

@@ -34,11 +34,12 @@
     <string name="settings_widget_style_ocean">Ocean</string>
     <string name="settings_widget_style_sunset">Sunset</string>
     <string name="settings_widget_style_midnight">Midnight</string>
-    <string name="settings_widget_refresh_title">Refresh every</string>
-    <string name="settings_widget_refresh_1h">1h</string>
-    <string name="settings_widget_refresh_2h">2h</string>
-    <string name="settings_widget_refresh_4h">4h</string>
     <string name="settings_widget_preview_tip">Stand up and stretch for a moment.</string>
+
+    <string name="settings_tip_source_title">Why this tip?</string>
+    <string name="settings_tip_source_quote">“%1$s”</string>
+    <string name="settings_tip_source_action">Read the source</string>
+    <string name="settings_tip_source_hint">Opens in your browser</string>
 
     <string name="settings_about_title">About</string>
     <string name="settings_about_privacy_promise">HealthWidget works 100% offline. No accounts, no analytics, no ads, and nothing ever leaves your device — not even anonymized data. All settings and tip history stay in local storage only.</string>

@@ -4,8 +4,8 @@ import java.time.LocalTime
 
 /**
  * User-configurable settings (FR6): notification frequency, sleep alert toggle, quiet hours,
- * and widget appearance/refresh cadence. A plain domain model — persistence is an
- * implementation detail of whatever [SettingsRepository] is backing it.
+ * and widget appearance. A plain domain model — persistence is an implementation detail of
+ * whatever [SettingsRepository] is backing it.
  */
 data class AppSettings(
     val notificationFrequency: Int,
@@ -13,7 +13,6 @@ data class AppSettings(
     val quietHoursStart: LocalTime,
     val quietHoursEnd: LocalTime,
     val widgetStyle: WidgetStyle,
-    val widgetRefreshInterval: WidgetRefreshInterval,
 ) {
     companion object {
         const val MIN_NOTIFICATION_FREQUENCY = 0
@@ -29,7 +28,6 @@ data class AppSettings(
                 quietHoursStart = LocalTime.of(23, 30),
                 quietHoursEnd = LocalTime.of(7, 0),
                 widgetStyle = WidgetStyle.FOREST,
-                widgetRefreshInterval = WidgetRefreshInterval.TWO_HOURS,
             )
     }
 }

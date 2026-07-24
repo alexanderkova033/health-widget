@@ -1,10 +1,65 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Full-bleed gradient card background for TipWidget, styled after quote-card widgets
      (e.g. the "Motivation" app) rather than a plain surface fill. -->
-<shape xmlns:android="http://schemas.android.com/apk/res/android">
-    <gradient
-        android:angle="135"
-        android:startColor="@color/widget_gradient_start"
-        android:endColor="@color/widget_gradient_end"
-        android:type="linear" />
-</shape>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:angle="135"
+                android:startColor="@color/widget_gradient_start"
+                android:endColor="@color/widget_gradient_end"
+                android:type="linear" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:type="radial"
+                android:gradientRadius="170dp"
+                android:centerX="0.5"
+                android:centerY="1.0"
+                android:startColor="@color/widget_forest_canopy_glow"
+                android:endColor="@android:color/transparent" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:type="radial"
+                android:gradientRadius="120dp"
+                android:centerX="0.85"
+                android:centerY="0.1"
+                android:startColor="@color/widget_forest_light"
+                android:endColor="@android:color/transparent" />
+        </shape>
+    </item>
+    <item
+        android:width="2.5dp"
+        android:height="2.5dp"
+        android:gravity="top|left"
+        android:left="32dp"
+        android:top="18dp">
+        <shape android:shape="oval">
+            <solid android:color="@color/widget_forest_firefly" />
+        </shape>
+    </item>
+    <item
+        android:width="2dp"
+        android:height="2dp"
+        android:gravity="center_vertical|right"
+        android:right="30dp">
+        <shape android:shape="oval">
+            <solid android:color="@color/widget_forest_firefly" />
+        </shape>
+    </item>
+    <item
+        android:width="1.8dp"
+        android:height="1.8dp"
+        android:gravity="bottom|left"
+        android:left="56dp"
+        android:bottom="24dp">
+        <shape android:shape="oval">
+            <solid android:color="@color/widget_forest_firefly" />
+        </shape>
+    </item>
+</layer-list>

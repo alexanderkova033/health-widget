@@ -16,14 +16,16 @@ private class FixedIndexRandom(private val index: Int) : Random() {
     override fun nextInt(until: Int): Int = index
 }
 
+private fun tip(text: String) = Tip(text = text, sourceLabel = "Test source", sourceUrl = "https://example.test")
+
 private val testCatalog =
     TipCatalog(
-        general = listOf("G1", "G2", "G3", "G4"),
-        morning = listOf("M1", "M2"),
-        afternoon = listOf("A1"),
-        evening = listOf("E1"),
-        sleepLate = "Sleep late fixed message",
-        sleepEarlyHours = "Sleep early-hours fixed message",
+        general = listOf("G1", "G2", "G3", "G4").map(::tip),
+        morning = listOf("M1", "M2").map(::tip),
+        afternoon = listOf("A1").map(::tip),
+        evening = listOf("E1").map(::tip),
+        sleepLate = tip("Sleep late fixed message"),
+        sleepEarlyHours = tip("Sleep early-hours fixed message"),
     )
 
 class TipEngineTest {
@@ -71,7 +73,7 @@ class TipEngineTest {
         val engine = TipEngine(testCatalog, FixedIndexRandom(0))
         val time = LocalTime.of(23, 30)
         val first = engine.messageFor(time, recentTips = emptyList())
-        val second = engine.messageFor(time, recentTips = listOf(first))
+        val second = engine.messageFor(time, recentTips = listOf(first.text))
         assertThat(second).isEqualTo(first)
         assertThat(second).isEqualTo(testCatalog.sleepLate)
     }
@@ -83,7 +85,7 @@ class TipEngineTest {
         // return M2 regardless of the random source, proving the whole list is honored.
         val recentTips = listOf("G1", "G2", "G3", "G4", "M1")
         val tip = engine.messageFor(LocalTime.of(9, 0), recentTips)
-        assertThat(tip).isEqualTo("M2")
+        assertThat(tip.text).isEqualTo("M2")
     }
 
     @Test
@@ -93,8 +95,8 @@ class TipEngineTest {
         val window = ArrayDeque<String>()
         repeat(200) {
             val tip = engine.messageFor(LocalTime.of(9, 0), window.toList())
-            assertThat(window).doesNotContain(tip)
-            window.addLast(tip)
+            assertThat(window).doesNotContain(tip.text)
+            window.addLast(tip.text)
             if (window.size > windowSize) window.removeFirst()
         }
     }
@@ -102,17 +104,17 @@ class TipEngineTest {
     @Test
     fun `falls back to a repeat when recentTips covers the entire pool`() {
         val singleTipCatalog =
-            testCatalog.copy(general = listOf("Only"), morning = emptyList())
+            testCatalog.copy(general = listOf(tip("Only")), morning = emptyList())
         val engine = TipEngine(singleTipCatalog, FixedIndexRandom(0))
 
         val tip = engine.messageFor(LocalTime.of(9, 0), recentTips = listOf("Only"))
 
-        assertThat(tip).isEqualTo("Only")
+        assertThat(tip.text).isEqualTo("Only")
     }
 
     private fun assertPoolComposition(
         time: LocalTime,
-        expectedPool: List<String>,
+        expectedPool: List<Tip>,
     ) {
         val actual =
             expectedPool.indices

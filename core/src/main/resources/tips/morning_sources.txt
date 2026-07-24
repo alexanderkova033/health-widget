@@ -1,0 +1,25 @@
+# Citation for each line in morning.txt, same order, one per line: Label<TAB>URL.
+# See TIP_SOURCES.md at the repo root for the full research writeup behind each of these.
+Circadian phase advance from morning light, PMC	https://pmc.ncbi.nlm.nih.gov/articles/PMC7029701/
+Ganio et al., British Journal of Nutrition, 2011	https://www.cambridge.org/core/journals/british-journal-of-nutrition/article/mild-dehydration-impairs-cognitive-performance-and-mood-of-men/3388AB36B8DF73E844C9AD19271A75BF
+Meta-analysis: Affective Responses to Acute Exercise	https://www.ovid.com/jnls/bsam/abstract/10.1097/psy.0000000000001321
+Meta-analysis: Affective Responses to Acute Exercise	https://www.ovid.com/jnls/bsam/abstract/10.1097/psy.0000000000001321
+Sleep Regularity Index cohort study, SLEEP/Oxford Academic	https://academic.oup.com/sleep/article/47/1/zsad253/7280269
+Circadian phase advance from morning light, PMC	https://pmc.ncbi.nlm.nih.gov/articles/PMC7029701/
+Rubinstein, Meyer & Evans, J. Exp. Psychology, 2001	https://pubmed.ncbi.nlm.nih.gov/11518143/
+Meta-analysis: Affective Responses to Acute Exercise	https://www.ovid.com/jnls/bsam/abstract/10.1097/psy.0000000000001321
+Lundberg et al., 1999	https://pubmed.ncbi.nlm.nih.gov/10431284/
+Rubinstein, Meyer & Evans, J. Exp. Psychology, 2001	https://pubmed.ncbi.nlm.nih.gov/11518143/
+Circadian phase advance from morning light, PMC	https://pmc.ncbi.nlm.nih.gov/articles/PMC7029701/
+Mark, Gudith & Klocke, CHI 2008	https://dl.acm.org/doi/10.1145/1357054.1357072
+StatPearls: Physiology, Diving Reflex	https://www.ncbi.nlm.nih.gov/books/NBK538245/
+Meta-analysis: Affective Responses to Acute Exercise	https://www.ovid.com/jnls/bsam/abstract/10.1097/psy.0000000000001321
+High-protein breakfast and postprandial glucose, MDPI	https://www.mdpi.com/2072-6643/15/1/85
+Illuminance comparison, EngineeringToolBox	https://www.engineeringtoolbox.com/light-level-rooms-d_708.html
+Cortisol Awakening Response overview, ScienceDirect Topics	https://www.sciencedirect.com/topics/neuroscience/cortisol-awakening-response
+Sleep Regularity Index cohort study, SLEEP/Oxford Academic	https://academic.oup.com/sleep/article/47/1/zsad253/7280269
+Meta-analysis: Affective Responses to Acute Exercise	https://www.ovid.com/jnls/bsam/abstract/10.1097/psy.0000000000001321
+Sundelin et al., Is snoozing losing?, J. Sleep Research, 2024	https://onlinelibrary.wiley.com/doi/10.1111/jsr.14054
+Effects of day-time light intensity on melatonin suppression, PMC	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4491270/
+IFIC: 4 Metabolism Myths, Busted	https://ific.org/resources/articles/myths-about-your-metabolism/
+Cardiovascular and mood responses to cold water immersion	https://www.sciencedirect.com/science/article/abs/pii/S0306456523002681

@@ -27,10 +27,13 @@ in on-device DataStore only. See [PRIVACY.md](PRIVACY.md) for the plain-English 
 
 v1 is intentionally passive:
 
-- A Glance home-screen widget showing the current tip, refreshed at a user-configurable
-  interval (1h / 2h / 4h, default 2h) and on boot. Tapping it opens the settings screen.
+- A Glance home-screen widget showing the current tip, refreshed at least every 2 hours and
+  on boot. Tapping it opens the settings screen.
 - Four selectable widget background styles (Forest, Ocean, Sunset, Midnight), previewed live
-  in Settings before picking one.
+  in Settings — the preview renders the same drawable the widget itself uses, so it never
+  drifts from the real thing.
+- A "Why this tip?" card in Settings showing the current tip's citation, with a button that
+  opens the primary source in the browser.
 - 0-6 daily notification nudges (user-configurable), each a rotating micro-tip.
 - One optional sleep alert at 23:00.
 - User-configurable quiet hours (default 23:30-07:00) during which nudges are silent — the
@@ -49,13 +52,16 @@ architecture) rather than on each other's concrete classes:
 
 - **`:core`** — the domain layer: pure Kotlin, JVM-only, zero Android imports. Grouped by
   concept, not by class kind:
-  - `tips/` — `TipEngine`, `TipCatalog`, `TipHistoryRepository` (interface), and
-    `AdvanceTipUseCase`, the one "pick + persist the next tip" rule shared by the widget
-    and both notification workers, so they can't silently diverge on anti-repeat (FR5).
-    `TipHistoryRepository` tracks the last `MAX_RECENT_TIPS` (30) tips shown, not just the
-    single previous one, and `TipEngine` excludes all of them when picking the next tip.
+  - `tips/` — `Tip` (a tip's text plus its citation — `sourceLabel`/`sourceUrl`, both
+    required, see `TipCatalogTest`), `TipEngine`, `TipCatalog`, `TipHistoryRepository`
+    (interface), and `AdvanceTipUseCase`, the one "pick + persist the next tip" rule shared
+    by the widget and both notification workers, so they can't silently diverge on
+    anti-repeat (FR5). `TipHistoryRepository` tracks the last `MAX_RECENT_TIPS` (30) tips
+    shown (by text) rather than just the single previous one, and `TipEngine` excludes all
+    of them when picking the next tip. `TipEngine.findByText` resolves a persisted tip's
+    text back to its full `Tip` (citation included) for the settings screen to display.
   - `settings/` — the `AppSettings` model (notification frequency, sleep alert, quiet
-    hours, widget style, widget refresh interval) and `SettingsRepository` interface.
+    hours, widget style) and `SettingsRepository` interface.
   - `scheduling/` — `QuietHours` and `durationUntilNext`.
   Everything here is trivially unit-testable and reusable as-is by a future iOS port.
 - **`:app`** — the Android application, organized by feature rather than by technical
@@ -69,6 +75,7 @@ architecture) rather than on each other's concrete classes:
 graph TD
     subgraph core["core (domain layer — pure Kotlin, JVM, zero Android imports)"]
         subgraph coreTips["tips"]
+            Tip
             TipEngine
             TipCatalog
             TipHistoryRepository["TipHistoryRepository (interface)"]
@@ -112,11 +119,15 @@ graph TD
     DataStoreTipHistoryRepository -.implements.-> TipHistoryRepository
     DataStoreSettingsRepository --> DataStore
     DataStoreTipHistoryRepository --> DataStore
+    TipCatalog --> Tip
+    TipEngine --> TipCatalog
     AdvanceTipUseCase --> TipEngine
     AdvanceTipUseCase --> TipHistoryRepository
 
     SettingsScreen --> SettingsRepository
     SettingsScreen --> NudgeScheduler
+    SettingsScreen --> TipHistoryRepository
+    SettingsScreen --> TipEngine
 
     NudgeWorker --> AdvanceTipUseCase
     NudgeWorker --> QuietHours
@@ -143,13 +154,31 @@ Notable design decisions:
 - The Glance widget's `updatePeriodMillis` is set to `0`; refresh is driven entirely by a
   2-hour WorkManager periodic job, since the AppWidget framework's own update period has an
   unreliable 30-minute floor.
-- Tip content lives in bundled plain-text resources (`core/src/main/resources/tips/*.txt`),
-  not a JSON asset, to avoid pulling a JSON dependency into a module whose whole point is
-  to stay dependency-free. Every non-obvious claim a tip makes is cited in
-  [TIP_SOURCES.md](TIP_SOURCES.md), organized by theme rather than by file.
+- Tip content lives in bundled plain-text resources (`core/src/main/resources/tips/*.txt`
+  plus a line-for-line `*_sources.txt` citation file per pool), not a JSON asset, to avoid
+  pulling a JSON dependency into a module whose whole point is to stay dependency-free.
+  Every non-obvious claim a tip makes is cited in [TIP_SOURCES.md](TIP_SOURCES.md),
+  organized by theme rather than by file, and enforced in code (`TipCatalog.loadDefault`,
+  `TipCatalogTest`) so a tip can't ship without one.
 - There's no DI framework (`AppContainer` is a hand-written composition root) and no
-  ViewModel (the single settings screen collects a `Flow` directly) — both are deliberately
-  skipped as unnecessary weight for an app this size, not oversights.
+  ViewModel (the settings screen collects `Flow`s directly) — both are deliberately skipped
+  as unnecessary weight for an app this size, not oversights.
+- The widget's background is rendered from the real `<layer-list>` drawable resource via
+  `AndroidView`/`ImageView` interop in both the widget itself (Glance `ImageProvider`) and
+  the settings screen's live preview/style swatches — Compose's own `painterResource` only
+  handles vector/raster drawables, not `<shape>`/`<layer-list>` resources, and a hand-picked
+  `Brush.linearGradient` stand-in would drift from the real widget over time.
+- Widget style changes (and any future direct widget re-render trigger) go through
+  `WidgetScheduler.refreshNow()` — a WorkManager job — rather than calling
+  `GlanceAppWidget.updateAll()` directly from the settings screen's own coroutine scope.
+  The direct call worked once but then got stuck until the app was force-restarted: it ran
+  in a scope tied to the screen's lifecycle, which could be cancelled mid-composition if the
+  user navigated away, apparently leaving Glance's widget session for that ID stuck. Routing
+  through the same WorkManager path the periodic refresh already uses sidesteps that
+  entirely.
+- A user-configurable widget refresh interval (1h/2h/4h) was built, then removed: FR1 only
+  requires "at least every 2 hours," and the extra setting wasn't worth the added surface
+  area. `WidgetScheduler` now hardcodes a 2-hour interval again.
 
 ## Tech stack
 

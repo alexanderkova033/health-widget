@@ -1,41 +1,41 @@
 # General micro-tips shown across morning/afternoon/evening, one per line.
-Many eye doctors recommend the 20-20-20 rule: every 20 minutes, look 20 feet away for 20 seconds.
-Blink fully, not just often — incomplete blinks during screen use are linked to dry, tired eyes.
-Stand up, stretch your legs, and drop your shoulders.
-Un-cross your legs and roll your ankles right now.
-Take 3 slow, deep breaths. Slow breathing can help calm your nervous system.
-Match screen brightness to your room to reduce eye strain.
-A quick 5-minute walk is a great way to refresh your focus.
-Aim for at least 3 screen-free breaks during your study blocks.
-Keep a glass of water on your desk so sipping is effortless.
-Roll your shoulders backward a few times to release tension.
-Relax your jaw and shoulders — tension can build up without you noticing.
-Check your posture: ears, shoulders, and hips roughly stacked.
-Reduce glare on your screen — it's a common cause of eye strain.
-Wiggle your fingers and stretch your wrists if you've been typing a while.
-A short stretch break can help you feel refreshed before you continue.
-Notice your breathing — is it shallow? Try a few slower breaths.
-Adjust your chair or seat so your feet rest flat on the floor.
-Try a minute without any screen or sound — a small pause can feel calming.
-Reached a natural pause? That's a good moment for a short break.
-Loosen your grip — tension in your hands often creeps in unnoticed.
-Standing up every so often can help offset a long stretch of sitting.
-Position your screen at eye level and roughly an arm's length away to ease neck and eye strain.
-Let your chair's backrest support your lower back instead of leaning forward.
-Even mild dehydration can affect focus — a sip of water might help.
-Gently stretch your neck from side to side to ease built-up tension.
-Try to keep your shoulders relaxed and away from your ears.
-If a screen feels too close, increasing the text size beats leaning in.
-Keeping your wrists straight rather than bent while typing can help reduce strain.
-A change of position — sitting, standing, or walking — can ease physical fatigue.
-A cluttered desk can compete for your attention — a quick tidy might help you focus.
-Every extra hour of sitting is linked to worse long-term health markers, even if you exercise regularly.
-Switching between tasks has a real cost — it can slow you down more than finishing one thing at a time.
-Even a quick glance at a notification can pull your focus — it takes a while to fully re-settle afterward.
-A view of greenery, even through a window, is linked to faster recovery from mental fatigue.
-Stuffy, high-CO2 rooms have been linked to slower thinking in studies — cracking a window can help.
-Stress often shows up first as tension in the jaw, neck, and shoulders — worth a quick check-in.
-Sustained poor posture is linked to more reported fatigue over the course of a day, not just discomfort.
-Media multitasking is linked to more reported stress, not less, even though it can feel productive.
-A brief walk, even indoors, has been shown to boost creative thinking more than sitting still.
-Daytime light exposure helps anchor your body clock, too — it's not only about mornings.
+Eye doctors have recommended the 20-20-20 rule for years: every 20 minutes, look at something roughly 20 feet away for 20 seconds. No study has actually proven those exact numbers, just that regular breaks help.
+A full, deliberate blink does more for dry eyes than a fast one does. One study found how completely you blink matters more than how often, and screens quietly cut blinks short.
+Stand up, stretch your legs out, and let your shoulders drop for a second.
+Uncross your legs and roll your ankles a few times right now.
+Take three slow, deep breaths. Slowing your breathing like this can shift your nervous system out of alert mode surprisingly fast.
+Try matching your screen brightness to the room around you. Constantly re-adapting between a bright screen and a dim room is its own source of eye strain.
+A five-minute walk, even just laps around the room, is often enough to reset a tired focus.
+Try to fit in a few screen-free breaks during your study blocks, three or so if you can manage it.
+Keep a glass of water within reach on your desk so sipping doesn't take any real effort.
+Roll your shoulders backward a handful of times to loosen whatever tension has built up.
+Check in on your jaw and shoulders now and then. It's an easy spot for tension to build without you noticing until it's already there.
+Take a moment to check your posture: ears, shoulders, and hips more or less stacked on top of each other.
+Glare is easy to overlook, but it's one of the more common causes of eye strain, so it's worth adjusting your screen if you can.
+If you've been typing a while, wiggle your fingers and stretch your wrists out.
+A short stretch break tends to leave you noticeably more refreshed once you sit back down, more than the minute it costs you.
+Pay attention to your breathing for a second. If it feels shallow, a few slower breaths usually help more than you'd expect.
+Adjust your chair so your feet actually rest flat on the floor, rather than dangling or reaching for it.
+A minute without any screen or sound can feel strangely calming if you give it an honest try, almost like your brain doesn't know what to do with the quiet.
+If you've hit a natural pause in what you're doing, that's usually a good moment to take a short break.
+Loosen your grip on the mouse or keyboard. People tend to grip far harder than the task actually requires.
+Standing up every so often, even briefly, helps offset a long stretch of sitting.
+Try positioning your screen at eye level and about an arm's length away. It eases both neck and eye strain at once.
+Let your chair's backrest actually hold your lower back instead of leaning forward off of it all day.
+Mild dehydration can dull your focus well before you ever feel thirsty, so a sip of water might help more than it seems like it should.
+Gently stretch your neck from side to side for a moment to ease whatever tension has built up there.
+Try to keep your shoulders down and relaxed instead of creeping up toward your ears, a classic tell for stress.
+If a screen feels too close, bumping up the text size usually beats leaning in toward it.
+Bent wrists measurably raise the pressure inside your carpal tunnel while you type. Keeping them straight is a small change with a real effect.
+Changing position now and then, sitting, standing, or walking, tends to ease physical fatigue better than staying put ever does.
+A cluttered desk isn't just distracting in a vague sense. Each object in view competes with the others for attention in your visual cortex.
+Every extra hour of sitting is linked to worse long-term health markers, per a review of 47 studies, even among people who exercise regularly.
+Switching between tasks has a measurable cost in psychology research. Finishing one thing before starting the next is usually faster overall.
+Even a quick glance at a notification pulls your focus away, and refocusing afterward can take twenty minutes or more in some studies.
+A view of greenery, even through a window, helps recover from mental fatigue. Psychologists call the effect "soft fascination."
+A stuffy room can climb past 1,000 ppm CO2, the point where one study found decision-making measurably starts to suffer.
+Stress often shows up first as physical tension in the jaw, neck, and shoulders, sometimes measurably so before anyone feels stressed at all.
+Sustained poor posture is linked to more fatigue over the course of a day, on top of the discomfort itself.
+Media multitasking is linked to more reported stress rather than less, even though it can feel productive in the moment.
+A Stanford study found walking, even just indoors, roughly doubled creative output versus sitting, and some of the boost lingered after sitting back down.
+Daytime light exposure helps anchor your body clock too, not only the light you get first thing in the morning.

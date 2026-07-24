@@ -18,15 +18,17 @@ private class FakeTipHistoryRepository(initial: List<String> = emptyList()) : Ti
     }
 }
 
+private fun tip(text: String) = Tip(text = text, sourceLabel = "Test source", sourceUrl = "https://example.test")
+
 class AdvanceTipUseCaseTest {
     private val catalog =
         TipCatalog(
-            general = listOf("G1", "G2"),
-            morning = listOf("M1"),
+            general = listOf("G1", "G2").map(::tip),
+            morning = listOf("M1").map(::tip),
             afternoon = emptyList(),
             evening = emptyList(),
-            sleepLate = "Sleep late",
-            sleepEarlyHours = "Sleep early",
+            sleepLate = tip("Sleep late"),
+            sleepEarlyHours = tip("Sleep early"),
         )
 
     @Test
@@ -37,7 +39,7 @@ class AdvanceTipUseCaseTest {
 
             val tip = advanceTip(LocalTime.of(9, 0))
 
-            assertThat(repository.recentTips.first()).contains(tip)
+            assertThat(repository.recentTips.first()).contains(tip.text)
         }
 
     @Test
@@ -48,6 +50,6 @@ class AdvanceTipUseCaseTest {
 
             val tip = advanceTip(LocalTime.of(9, 0))
 
-            assertThat(tip).isNotEqualTo("G1")
+            assertThat(tip.text).isNotEqualTo("G1")
         }
 }

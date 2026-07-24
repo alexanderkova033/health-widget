@@ -45,7 +45,16 @@ characters; use the body to explain *why*, not *what* (the diff already shows *w
 
 ## Adding a tip
 
-Tip pools live in `core/src/main/resources/tips/*.txt`, one tip per line. Keep new tips:
+Tip pools live in `core/src/main/resources/tips/*.txt`, one tip per line. Every pool file
+has a companion `<name>_sources.txt` in the same directory, one `Label<TAB>URL` citation per
+line, in the same order — `TipCatalog.loadDefault()` zips the two line-for-line and fails
+loudly (`require`) if the counts don't match, and `TipCatalogTest`'s "every tip has a real
+citation" check fails the build if either the label or URL is blank. This isn't optional
+bookkeeping: the citation is what powers the settings screen's "Why this tip?" card, which
+opens `sourceUrl` in the user's browser (see `TIP_SOURCES.md` at the repo root for the
+underlying research, organized by theme rather than by file).
+
+Keep new tips:
 
 - Non-numeric / non-statistical (no fabricated stats) — a real, well-established figure
   (e.g. a caffeine half-life, a recommended bedroom temperature range) is fine; an
@@ -54,6 +63,6 @@ Tip pools live in `core/src/main/resources/tips/*.txt`, one tip per line. Keep n
 - Short enough to read at a glance in a notification or a small widget — in practice, under
   ~115 characters, since the widget caps tip text at 5 lines of bold 16sp type
   (`TipWidget.kt`) and has to fit the smallest home-screen widget size too.
-- Backed by real research: add or update the matching entry in
-  [TIP_SOURCES.md](TIP_SOURCES.md) so every claim a tip makes stays traceable to a primary
-  source.
+- Backed by a real primary source: add the tip's text to the pool `.txt` file and its
+  `Label<TAB>URL` citation to the matching `_sources.txt` file at the same line position,
+  and add or update the corresponding entry in [TIP_SOURCES.md](TIP_SOURCES.md).

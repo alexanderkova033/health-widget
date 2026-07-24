@@ -1,0 +1,2 @@
+# Citation for the single fixed message in sleep_late.txt: Label<TAB>URL.
+Sleep regularity is a stronger predictor of mortality risk, SLEEP 2024	https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10782501/

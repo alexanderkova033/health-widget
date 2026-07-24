@@ -21,6 +21,4 @@ interface SettingsRepository {
     )
 
     suspend fun setWidgetStyle(style: WidgetStyle)
-
-    suspend fun setWidgetRefreshInterval(interval: WidgetRefreshInterval)
 }

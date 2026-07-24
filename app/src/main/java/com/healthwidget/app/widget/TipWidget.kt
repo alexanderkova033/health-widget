@@ -51,7 +51,7 @@ class TipWidget : GlanceAppWidget() {
     ) {
         val container = (context.applicationContext as HealthWidgetApp).container
         val existingTip = container.tipHistoryRepository.recentTips.first().lastOrNull()
-        val tip = existingTip ?: container.advanceTip(LocalTime.now())
+        val tip = existingTip ?: container.advanceTip(LocalTime.now()).text
         val style = container.settingsRepository.settings.first().widgetStyle
 
         provideContent {
@@ -62,7 +62,7 @@ class TipWidget : GlanceAppWidget() {
     }
 }
 
-private fun WidgetStyle.backgroundDrawableRes(): Int =
+internal fun WidgetStyle.backgroundDrawableRes(): Int =
     when (this) {
         WidgetStyle.FOREST -> R.drawable.widget_quote_background
         WidgetStyle.OCEAN -> R.drawable.widget_background_ocean

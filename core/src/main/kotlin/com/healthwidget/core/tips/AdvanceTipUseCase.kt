@@ -14,10 +14,10 @@ class AdvanceTipUseCase(
     private val tipEngine: TipEngine,
     private val tipHistoryRepository: TipHistoryRepository,
 ) {
-    suspend operator fun invoke(now: LocalTime): String {
+    suspend operator fun invoke(now: LocalTime): Tip {
         val recentTips = tipHistoryRepository.recentTips.first()
         val tip = tipEngine.messageFor(now, recentTips)
-        tipHistoryRepository.recordTip(tip)
+        tipHistoryRepository.recordTip(tip.text)
         return tip
     }
 }

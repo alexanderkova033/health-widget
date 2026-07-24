@@ -30,7 +30,7 @@ class TipEngine(
     fun messageFor(
         time: LocalTime,
         recentTips: List<String>,
-    ): String =
+    ): Tip =
         when (dayPartFor(time)) {
             // Fixed, single-message reminders are not drawn from a rotating pool — there is
             // only ever one possible message for each — so they are exempt from anti-repeat.
@@ -41,14 +41,26 @@ class TipEngine(
             DayPart.EVENING -> pick(catalog.general + catalog.evening, recentTips)
         }
 
+    /**
+     * Resolves a tip's full [Tip] (including its citation) from just its displayed text — the
+     * form [TipHistoryRepository] persists. Lets callers (e.g. the Settings screen) look up the
+     * source of "whatever was last shown" without the history itself needing to store anything
+     * beyond plain text.
+     */
+    fun findByText(text: String): Tip? =
+        (
+            catalog.general + catalog.morning + catalog.afternoon + catalog.evening +
+                listOf(catalog.sleepLate, catalog.sleepEarlyHours)
+        ).find { it.text == text }
+
     private fun pick(
-        pool: List<String>,
+        pool: List<Tip>,
         recentTips: List<String>,
-    ): String {
+    ): Tip {
         // If excluding every recent tip empties the pool (e.g. a small pool combined with a
         // long history), fall back to the full pool rather than crashing — this necessarily
         // repeats something, but only when there's truly no alternative left.
-        val candidates = pool.filterNot { it in recentTips }.ifEmpty { pool }
+        val candidates = pool.filterNot { it.text in recentTips }.ifEmpty { pool }
         return candidates[random.nextInt(candidates.size)]
     }
 }

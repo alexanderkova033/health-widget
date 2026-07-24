@@ -14,14 +14,22 @@ data, usage data, or analytics of any kind.
 The app stores a small amount of data **only on your device**, using Android's local
 DataStore mechanism:
 
-- Your notification frequency, sleep alert toggle, quiet-hours, widget background style, and
-  widget refresh interval settings.
+- Your notification frequency, sleep alert toggle, quiet-hours, and widget background style
+  settings.
 - The most recently shown tips (up to the last 30), so the same one doesn't come up again
   too soon.
 
 None of this is ever transmitted anywhere. There is no server for it to go to: the app has
 no network permission at all (it does not request `INTERNET`), so it is technically
 incapable of sending data off the device, even if it wanted to.
+
+## Tip source links
+
+The settings screen shows the research citation behind the currently displayed tip, with a
+button to read the primary source. Tapping it hands off to your device's own web browser —
+HealthWidget itself never makes a network request (it can't; see above). The browser is a
+separate app with its own network access and its own privacy policy, outside HealthWidget's
+control.
 
 ## Third parties
 

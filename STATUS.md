@@ -50,13 +50,19 @@ Two follow-up passes after the initial build-out:
   - Every settings section now has a leading icon (`material-icons-extended`, justified in
     a build.gradle.kts comment since it's beyond the originally-fixed stack) and shorter
     body text; the app's own launcher mark now sits next to the screen title.
-  - New **Widget** section: a live gradient preview plus four selectable background styles
+  - New **Widget** section: a live preview (rendered from the actual widget background
+    drawable, not a hand-picked brush) plus four selectable background styles
     (Forest/Ocean/Sunset/Midnight — `WidgetStyle` enum in `:core`, actual drawables/colors
-    in `:app`), and a 1h/2h/4h refresh-interval segmented control (`WidgetRefreshInterval`
-    enum) — both wired into `AppSettings`/`SettingsRepository` alongside the existing
-    fields. Changing the style calls `TipWidget().updateAll(context)` immediately;
-    changing the interval calls `WidgetScheduler.rescheduleAll(...)` (uses WorkManager's
-    `UPDATE` policy so the periodic timer's identity survives the change).
+    in `:app`), wired into `AppSettings`/`SettingsRepository` alongside the existing
+    fields. Changing the style persists it and calls `WidgetScheduler.refreshNow()`
+    (runs the update inside a WorkManager job so it isn't tied to this screen's
+    lifecycle). The refresh cadence is a fixed 2h default in `WidgetScheduler` now —
+    the user-facing "Refresh every" control was removed (2026-07-24, later still) along
+    with `WidgetRefreshInterval` and its DataStore key.
+  - Settings sections are now grouped into `Card`s (`SectionCard`) instead of flat
+    `HorizontalDivider`-separated blocks, and the widget style swatches/preview render the
+    real layered gradient drawables via `AndroidView`/`ImageView` interop (Compose's
+    `painterResource` doesn't support `<layer-list>`/`<shape>` resources).
   - Nudge frequency ceiling raised from 3/day to 6/day (`AppSettings.MAX_NOTIFICATION_FREQUENCY`),
     with new default nudge times for levels 4-6 in `NudgeScheduler.NUDGE_TIMES_BY_FREQUENCY`,
     and the frequency label switched from three hardcoded strings to a proper `<plurals>`
@@ -68,24 +74,60 @@ Two follow-up passes after the initial build-out:
     single nullable, and `DataStoreTipHistoryRepository` stores the list as a
     newline-joined string (tips are always single-line, so no JSON dependency needed) and
     trims to the 30 most recent on every write.
+- **`feat:` tip source citations + settings screen polish (2026-07-24, later still)** —
+  every tip now carries a citation, and a real bug in the widget-style picker got fixed:
+  - New `Tip` data class (`text`, `sourceLabel`, `sourceUrl`) replaces the raw `String` that
+    `TipCatalog`/`TipEngine`/`AdvanceTipUseCase` used to pass around. Each pool `.txt` file
+    now has a companion `<name>_sources.txt` (`Label<TAB>URL` per line, same order),
+    zipped in by `TipCatalog.loadDefault()`; `TipCatalogTest`'s "every tip has a real
+    citation" test fails the build if a label or URL is blank. `TipEngine.findByText`
+    resolves the persisted (plain-text) history back to a full `Tip` for display.
+  - Settings screen gained a "Why this tip?" card (`TipSourceSection`) showing the current
+    tip's citation with a button that opens `sourceUrl` in the system browser
+    (`Intent.ACTION_VIEW`) — no `INTERNET` permission needed for that, since the browser
+    process makes the request, not this app.
+  - **Real bug found and fixed**: changing the widget style worked the *first* time, then
+    silently stopped working until the app was force-stopped and relaunched. Root cause:
+    the style-change handler called `TipWidget().updateAll(context)` directly inside the
+    settings screen's own `rememberCoroutineScope()`-backed coroutine, which is cancelled
+    if the user navigates away before the Glance composition finishes — apparently leaving
+    that widget ID's Glance session stuck until the process died. Fixed by routing through
+    `WidgetScheduler.refreshNow()` (a WorkManager one-time job) instead, mirroring how
+    `WidgetRefreshWorker` already reliably drives the periodic refresh. Confirmed via
+    `adb`/screenshots before the fix (reproduced exactly as described) — not yet
+    re-confirmed on-device after the fix (pending device reconnect).
+  - The user-configurable widget refresh interval (1h/2h/4h, `WidgetRefreshInterval`) added
+    earlier the same day was removed again: FR1 only requires "at least every 2 hours," and
+    the setting wasn't earning its keep. `WidgetScheduler` is back to a hardcoded 2h.
+  - Settings sections are now grouped into `Card`s (`SectionCard`) instead of flat
+    `HorizontalDivider`-separated blocks, and the widget preview/style swatches render the
+    *actual* layered gradient drawables (radial glow + decorative sparkle/star/ember accents
+    added to each `widget_background_*.xml`, not flat two-stop gradients) via
+    `AndroidView`/`ImageView` interop, since Compose's `painterResource` doesn't support
+    `<layer-list>`/`<shape>` resources — `WidgetStyle.backgroundDrawableRes()` (in
+    `TipWidget.kt`, now `internal`) is shared between the real widget and this preview so
+    they can't drift apart.
 
 ## Verified for real (not just reviewed)
 
-- `:core` — 36 unit tests pass (JVM, no Android needed).
+- `:core` — 38 unit tests pass (JVM, no Android needed) — includes two new
+  `TipCatalogTest` cases for the citation requirement.
 - `:app` — 10 unit tests pass, debug and release variants.
 - `ktlintCheck`, `lint` (0 errors), full `build` including `assembleRelease` with R8
-  minification — all green.
-- **CI is live and green**: GitHub Actions ran on the latest push (`b192ea8`) and passed —
-  see the badge in README.md or the [Actions tab](https://github.com/alexanderkova033/health-widget/actions).
-  The settings/widget-style/30-tip-window changes above are **not pushed yet** (still local,
-  uncommitted) — CI hasn't seen them.
-- The debug APK with today's settings/widget-style/anti-repeat changes was built
-  successfully but **not yet reinstalled/re-verified on the physical device** — the phone
-  disconnected from adb partway through this session and hadn't reconnected as of this
-  writing. The *previous* build (pre-widget-styles) was confirmed working on-device: it
-  installed, rendered correctly (after fixing a real `100%%` string bug lint/tests missed),
-  and the notification-permission flow, WorkManager job scheduling, and settings
-  persistence-through-reinstall all checked out via `adb`/`dumpsys`/screenshots.
+  minification — all green, after fixing the `Tip`-typed API in every test that still
+  expected raw `String`s (`TipEngineTest`, `AdvanceTipUseCaseTest`, `TipCatalogTest`).
+- **CI is live and green**: GitHub Actions ran on push `b192ea8` and passed — see the badge
+  in README.md or the [Actions tab](https://github.com/alexanderkova033/health-widget/actions).
+  Everything described in this file is **local and uncommitted as of this writing** — CI
+  hasn't seen any of the settings-redesign/citation/anti-repeat-window work yet.
+- On-device: the widget-style picker bug (see above) was reproduced and confirmed exactly
+  as reported, then fixed and rebuilt. The fix itself has **not yet been re-verified
+  on-screen** — pending the phone reconnecting/re-authorizing over `adb` again. Before that
+  bug was found, this same build's settings screen (icons, trimmed text, Card sections,
+  live widget preview, style swatches, frequency slider to 6, the "100% offline" string)
+  was confirmed rendering correctly via `adb` screenshots, and the notification-permission
+  flow, WorkManager job scheduling, and settings persistence-through-reinstall all checked
+  out via `adb`/`dumpsys` in an earlier pass this session.
 
 ## Release readiness
 
@@ -108,18 +150,27 @@ Two follow-up passes after the initial build-out:
 ## In progress right now
 
 Testing on a **physical Android device via USB** (the user's choice over emulator /
-Android Studio / Firebase Test Lab, made explicitly) — a Samsung Galaxy A34 (`SM_A346E`).
-It was successfully connected and verified once already this session (see above), then
-disconnected from `adb` again after the settings/widget-style changes were made and hasn't
-reconnected yet. Waiting on the phone showing up in `adb devices -l` again (USB debugging is
-already enabled and this computer is already authorized, so no prompt should be needed —
-just a cable/connection issue to resolve).
+Android Studio / Firebase Test Lab, made explicitly) — a Samsung Galaxy A34 (`SM_A346E`),
+using a USB-A-to-C cable (not the USB-C-to-C the user would've preferred, but confirmed
+working fine — an early "is this a bad cable" theory turned out to be wrong; Windows showed
+a perfectly healthy, driver-bound ADB interface throughout). The device keeps needing
+re-authorization (`adb devices -l` shows `unauthorized`) each time the connection drops and
+comes back, which has happened a few times this session — that's normal for a "new" USB
+session from Android's perspective and just needs "Allow" tapped again on the phone each
+time, not a sign of a deeper problem.
 
-Once reconnected: `adb install -r app/build/outputs/apk/debug/app-debug.apk`, relaunch
-`SettingsActivity`, and specifically check the **new** surface area — the Widget section
-(style swatches actually change the live home-screen widget, refresh-interval segmented
-control, live preview), the frequency slider up to 6, and that the settings screen reads
-noticeably lighter (icons, trimmed text) than before.
+Next step once reconnected/authorized: `adb install -r app/build/outputs/apk/debug/app-debug.apk`,
+relaunch `SettingsActivity`, and specifically re-verify the widget-style picker — tap through
+**multiple different styles in a row** without restarting the app (that's exactly the
+sequence that exposed the now-fixed bug), and confirm the home-screen widget's background
+actually updates each time, plus the new "Why this tip?" citation card.
+
+One methodological note for next time: while both this session and the user were sending
+input to the same phone at once (adb `input tap` here, real touches from the user), the two
+interleaved and produced confusing, hard-to-interpret results (a style selection appeared to
+"jump back" to an earlier choice). Prefer read-only observation (screenshots, logcat,
+`dumpsys`) plus asking the user to perform the interaction, over sending synthetic input to a
+device the user is also actively holding.
 
 ## Local environment notes
 

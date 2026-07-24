@@ -10,10 +10,7 @@ import java.util.concurrent.TimeUnit
 
 class WidgetScheduler(private val context: Context) {
     /** Safe to call on every app start / boot: won't reset an already-running periodic timer. */
-    fun ensureScheduled(intervalMinutes: Long) = apply(intervalMinutes, ExistingPeriodicWorkPolicy.KEEP)
-
-    /** Applies a new [intervalMinutes] immediately, replacing any previously scheduled timer. */
-    fun rescheduleAll(intervalMinutes: Long) = apply(intervalMinutes, ExistingPeriodicWorkPolicy.UPDATE)
+    fun ensureScheduled() = apply(DEFAULT_INTERVAL_MINUTES, ExistingPeriodicWorkPolicy.KEEP)
 
     private fun apply(
         intervalMinutes: Long,
@@ -35,6 +32,8 @@ class WidgetScheduler(private val context: Context) {
     }
 
     companion object {
+        // FR1 requires the widget refresh at least every 2 hours; no longer user-configurable.
+        private const val DEFAULT_INTERVAL_MINUTES = 120L
         private const val PERIODIC_WORK_NAME = "widget_periodic_refresh"
         private const val IMMEDIATE_WORK_NAME = "widget_immediate_refresh"
     }

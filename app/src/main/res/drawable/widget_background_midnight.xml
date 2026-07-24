@@ -1,8 +1,63 @@
 <?xml version="1.0" encoding="utf-8"?>
-<shape xmlns:android="http://schemas.android.com/apk/res/android">
-    <gradient
-        android:angle="135"
-        android:startColor="@color/widget_midnight_start"
-        android:endColor="@color/widget_midnight_end"
-        android:type="linear" />
-</shape>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:angle="135"
+                android:startColor="@color/widget_midnight_start"
+                android:endColor="@color/widget_midnight_end"
+                android:type="linear" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:type="radial"
+                android:gradientRadius="130dp"
+                android:centerX="0.82"
+                android:centerY="0.18"
+                android:startColor="@color/widget_midnight_moon_glow"
+                android:endColor="@android:color/transparent" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:type="radial"
+                android:gradientRadius="170dp"
+                android:centerX="0.22"
+                android:centerY="0.95"
+                android:startColor="@color/widget_midnight_aurora_glow"
+                android:endColor="@android:color/transparent" />
+        </shape>
+    </item>
+    <item
+        android:width="2.5dp"
+        android:height="2.5dp"
+        android:gravity="top|left"
+        android:left="28dp"
+        android:top="12dp">
+        <shape android:shape="oval">
+            <solid android:color="@color/widget_midnight_star" />
+        </shape>
+    </item>
+    <item
+        android:width="2dp"
+        android:height="2dp"
+        android:gravity="top|center_horizontal"
+        android:top="22dp">
+        <shape android:shape="oval">
+            <solid android:color="@color/widget_midnight_star" />
+        </shape>
+    </item>
+    <item
+        android:width="1.8dp"
+        android:height="1.8dp"
+        android:gravity="top|left"
+        android:left="66dp"
+        android:top="9dp">
+        <shape android:shape="oval">
+            <solid android:color="@color/widget_midnight_star" />
+        </shape>
+    </item>
+</layer-list>
