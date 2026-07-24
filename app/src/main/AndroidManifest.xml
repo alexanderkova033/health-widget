@@ -55,6 +55,18 @@
             </intent-filter>
         </receiver>
 
+        <!-- TIMEZONE_CHANGED and TIME_SET are both protected system broadcasts and are on
+             Android's exemption list for manifest-declared (static) implicit-broadcast
+             receivers, so exported=true here is safe the same way it is for BootReceiver. -->
+        <receiver
+            android:name=".notifications.ClockChangeReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+                <action android:name="android.intent.action.TIME_SET" />
+            </intent-filter>
+        </receiver>
+
     </application>
 
 </manifest>

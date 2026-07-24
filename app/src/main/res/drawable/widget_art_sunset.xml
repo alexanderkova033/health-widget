@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Rolling hill silhouette, two depth tones — sits on top of the sun disc layer in
+     widget_background_sunset.xml so the sun reads as setting behind the hills. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="300dp"
+    android:height="150dp"
+    android:viewportWidth="300"
+    android:viewportHeight="150">
+    <path
+        android:fillColor="@color/widget_sunset_hill_back"
+        android:pathData="M0,150 L0,110 Q60,70 130,105 Q190,130 260,95 Q285,85 300,90 L300,150 Z" />
+    <path
+        android:fillColor="@color/widget_sunset_hill_front"
+        android:pathData="M0,150 L0,130 Q80,95 150,128 Q210,150 280,120 Q292,115 300,118 L300,150 Z" />
+</vector>

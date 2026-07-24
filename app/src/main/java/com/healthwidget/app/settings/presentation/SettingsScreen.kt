@@ -40,7 +40,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
@@ -58,6 +57,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
@@ -98,7 +98,7 @@ fun SettingsScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var settings by remember { mutableStateOf(AppSettings.DEFAULT) }
-    var currentTip by remember { mutableStateOf<Tip?>(null) }
+    var lastTipText by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(settingsRepository) {
         settingsRepository.settings.collectLatest { settings = it }
@@ -106,7 +106,7 @@ fun SettingsScreen(
 
     LaunchedEffect(tipHistoryRepository) {
         tipHistoryRepository.recentTips.collectLatest { recent ->
-            currentTip = recent.lastOrNull()?.let(tipEngine::findByText)
+            lastTipText = recent.lastOrNull()
         }
     }
 
@@ -179,10 +179,11 @@ fun SettingsScreen(
             )
         }
 
-        currentTip?.let { tip ->
+        lastTipText?.let { text ->
             SectionCard {
                 TipSourceSection(
-                    tip = tip,
+                    tipText = text,
+                    source = tipEngine.findByText(text),
                     onRefresh = { refreshTipNow(context) },
                 )
             }
@@ -272,53 +273,62 @@ private fun NotificationPermissionCard(onAllowClick: () -> Unit) {
 }
 
 /** Umbrella section for everything notification-related: a master switch up top, then
- * frequency/sleep-alert/quiet-hours underneath — collapsed to a one-line status when the
- * switch is off, since none of that detail matters while nothing can fire anyway. */
+ * frequency/sleep-alert/quiet-hours underneath. The sub-controls stay visible (just dimmed
+ * and non-interactive) when the switch is off, rather than disappearing — so turning
+ * notifications off doesn't read as "my frequency/sleep-alert settings got wiped." */
 @Composable
 private fun NotificationsSection(
     settings: AppSettings,
     onSettingsChange: (AppSettings) -> Unit,
 ) {
+    val controlsEnabled = settings.notificationsEnabled
+
     SectionTitle(
         icon = Icons.Filled.Notifications,
         text = stringResource(R.string.settings_notifications_title),
         trailing = {
             Switch(
-                checked = settings.notificationsEnabled,
+                checked = controlsEnabled,
                 onCheckedChange = { onSettingsChange(settings.copy(notificationsEnabled = it)) },
             )
         },
     )
 
-    if (!settings.notificationsEnabled) {
+    if (!controlsEnabled) {
         Text(
             text = stringResource(R.string.settings_notifications_off_hint),
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        return
+        Spacer(Modifier.height(12.dp))
     }
 
-    FrequencySection(
-        frequency = settings.notificationFrequency,
-        onFrequencyChange = { onSettingsChange(settings.copy(notificationFrequency = it)) },
-    )
-    Spacer(Modifier.height(20.dp))
-    SleepAlertSection(
-        enabled = settings.sleepAlertEnabled,
-        onEnabledChange = { onSettingsChange(settings.copy(sleepAlertEnabled = it)) },
-    )
-    Spacer(Modifier.height(20.dp))
-    QuietHoursSection(
-        start = settings.quietHoursStart,
-        end = settings.quietHoursEnd,
-        onChange = { start, end -> onSettingsChange(settings.copy(quietHoursStart = start, quietHoursEnd = end)) },
-    )
+    Column(modifier = Modifier.alpha(if (controlsEnabled) 1f else 0.45f)) {
+        FrequencySection(
+            frequency = settings.notificationFrequency,
+            enabled = controlsEnabled,
+            onFrequencyChange = { onSettingsChange(settings.copy(notificationFrequency = it)) },
+        )
+        Spacer(Modifier.height(20.dp))
+        SleepAlertSection(
+            checked = settings.sleepAlertEnabled,
+            controlsEnabled = controlsEnabled,
+            onCheckedChange = { onSettingsChange(settings.copy(sleepAlertEnabled = it)) },
+        )
+        Spacer(Modifier.height(20.dp))
+        QuietHoursSection(
+            start = settings.quietHoursStart,
+            end = settings.quietHoursEnd,
+            enabled = controlsEnabled,
+            onChange = { start, end -> onSettingsChange(settings.copy(quietHoursStart = start, quietHoursEnd = end)) },
+        )
+    }
 }
 
 @Composable
 private fun FrequencySection(
     frequency: Int,
+    enabled: Boolean,
     onFrequencyChange: (Int) -> Unit,
 ) {
     // Local drag state re-keyed off the persisted value: lets the thumb move smoothly while
@@ -333,6 +343,7 @@ private fun FrequencySection(
         onValueChangeFinished = { onFrequencyChange(sliderValue.toInt()) },
         valueRange = AppSettings.MIN_NOTIFICATION_FREQUENCY.toFloat()..AppSettings.MAX_NOTIFICATION_FREQUENCY.toFloat(),
         steps = AppSettings.MAX_NOTIFICATION_FREQUENCY - AppSettings.MIN_NOTIFICATION_FREQUENCY - 1,
+        enabled = enabled,
     )
 }
 
@@ -346,8 +357,9 @@ private fun frequencyLabel(frequency: Int): String =
 
 @Composable
 private fun SleepAlertSection(
-    enabled: Boolean,
-    onEnabledChange: (Boolean) -> Unit,
+    checked: Boolean,
+    controlsEnabled: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
 ) {
     SubsectionTitle(stringResource(R.string.settings_sleep_alert_title))
     Row(
@@ -361,7 +373,7 @@ private fun SleepAlertSection(
             modifier = Modifier.weight(1f),
         )
         Spacer(Modifier.width(16.dp))
-        Switch(checked = enabled, onCheckedChange = onEnabledChange)
+        Switch(checked = checked, onCheckedChange = onCheckedChange, enabled = controlsEnabled)
     }
 }
 
@@ -369,6 +381,7 @@ private fun SleepAlertSection(
 private fun QuietHoursSection(
     start: LocalTime,
     end: LocalTime,
+    enabled: Boolean,
     onChange: (LocalTime, LocalTime) -> Unit,
 ) {
     var editing by remember { mutableStateOf<QuietHoursField?>(null) }
@@ -380,12 +393,14 @@ private fun QuietHoursSection(
         TimeField(
             label = stringResource(R.string.settings_quiet_hours_start),
             time = start,
+            enabled = enabled,
             onClick = { editing = QuietHoursField.START },
         )
         Spacer(Modifier.width(24.dp))
         TimeField(
             label = stringResource(R.string.settings_quiet_hours_end),
             time = end,
+            enabled = enabled,
             onClick = { editing = QuietHoursField.END },
         )
     }
@@ -419,9 +434,10 @@ private enum class QuietHoursField { START, END }
 private fun TimeField(
     label: String,
     time: LocalTime,
+    enabled: Boolean,
     onClick: () -> Unit,
 ) {
-    TextButton(onClick = onClick) {
+    TextButton(onClick = onClick, enabled = enabled) {
         Column {
             Text(text = label, style = MaterialTheme.typography.bodySmall)
             Text(text = "%02d:%02d".format(time.hour, time.minute), style = MaterialTheme.typography.titleLarge)
@@ -575,40 +591,49 @@ private fun WidgetStyle.label(): String =
         WidgetStyle.MIDNIGHT -> stringResource(R.string.settings_widget_style_midnight)
     }
 
+/**
+ * [source] is a best-effort lookup ([TipEngine.findByText] matching the persisted plain-text
+ * history against the live catalog) and can be null — e.g. right after a wording edit to the
+ * tip catalog, the last tip a user was shown may no longer match any current entry
+ * byte-for-byte. The card (and the refresh button) must still show in that case: only the
+ * citation half depends on a successful match, not the card's existence.
+ */
 @Composable
 private fun TipSourceSection(
-    tip: Tip,
+    tipText: String,
+    source: Tip?,
     onRefresh: () -> Unit,
 ) {
-    SectionTitle(
-        icon = Icons.Filled.Science,
-        text = stringResource(R.string.settings_tip_source_title),
-        trailing = {
-            IconButton(onClick = onRefresh) {
-                Icon(
-                    imageVector = Icons.Filled.Refresh,
-                    contentDescription = stringResource(R.string.settings_tip_refresh_action),
-                )
-            }
-        },
-    )
+    SectionTitle(icon = Icons.Filled.Science, text = stringResource(R.string.settings_tip_source_title))
     Text(
-        text = stringResource(R.string.settings_tip_source_quote, tip.text),
+        text = stringResource(R.string.settings_tip_source_quote, tipText),
         style = MaterialTheme.typography.bodyLarge,
         fontWeight = FontWeight.Medium,
     )
     Spacer(Modifier.height(8.dp))
-    Text(text = tip.sourceLabel, style = MaterialTheme.typography.bodyMedium)
-    Spacer(Modifier.height(8.dp))
-    val context = LocalContext.current
-    TextButton(onClick = { openSource(context, tip.sourceUrl) }) {
-        Text(stringResource(R.string.settings_tip_source_action))
+    if (source != null) {
+        Text(text = source.sourceLabel, style = MaterialTheme.typography.bodyMedium)
+        Spacer(Modifier.height(8.dp))
+        val context = LocalContext.current
+        TextButton(onClick = { openSource(context, source.sourceUrl) }) {
+            Text(stringResource(R.string.settings_tip_source_action))
+        }
+        Text(
+            text = stringResource(R.string.settings_tip_source_hint),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(8.dp))
     }
-    Text(
-        text = stringResource(R.string.settings_tip_source_hint),
-        style = MaterialTheme.typography.labelSmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
+    TextButton(onClick = onRefresh) {
+        Icon(
+            imageVector = Icons.Filled.Refresh,
+            contentDescription = null,
+            modifier = Modifier.size(18.dp),
+        )
+        Spacer(Modifier.width(6.dp))
+        Text(stringResource(R.string.settings_tip_refresh_action))
+    }
 }
 
 /** Hands off to the system browser; no INTERNET permission needed since the browser process,

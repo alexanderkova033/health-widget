@@ -7,6 +7,7 @@ import androidx.work.WorkManager
 import androidx.work.workDataOf
 import com.healthwidget.core.scheduling.durationUntilNext
 import com.healthwidget.core.settings.AppSettings
+import java.time.Clock
 import java.time.LocalTime
 
 /**
@@ -15,8 +16,16 @@ import java.time.LocalTime
  * This owns the unique work names and the initial scheduling so both entry points
  * ([rescheduleAll] on a settings change, [ensureScheduled] as an app-start safety net) stay
  * consistent.
+ *
+ * [clock] drives every delay computed here via [durationUntilNext] — it must be resolved fresh
+ * (the default does this at construction time) rather than held across a time-zone or clock
+ * change, so always construct a new [NudgeScheduler] at the point of use rather than caching
+ * one as a long-lived field.
  */
-class NudgeScheduler(private val context: Context) {
+class NudgeScheduler(
+    private val context: Context,
+    private val clock: Clock = Clock.systemDefaultZone(),
+) {
     private val workManager: WorkManager
         get() = WorkManager.getInstance(context)
 
@@ -62,7 +71,7 @@ class NudgeScheduler(private val context: Context) {
     ) {
         val request =
             OneTimeWorkRequestBuilder<NudgeWorker>()
-                .setInitialDelay(durationUntilNext(time))
+                .setInitialDelay(durationUntilNext(time, clock))
                 .setInputData(workDataOf(NudgeWorker.KEY_SLOT_INDEX to slot))
                 .build()
         workManager.enqueueUniqueWork(workName, policy, request)
@@ -71,7 +80,7 @@ class NudgeScheduler(private val context: Context) {
     private fun enqueueSleepAlert(policy: ExistingWorkPolicy) {
         val request =
             OneTimeWorkRequestBuilder<SleepAlertWorker>()
-                .setInitialDelay(durationUntilNext(SLEEP_ALERT_TIME))
+                .setInitialDelay(durationUntilNext(SLEEP_ALERT_TIME, clock))
                 .build()
         workManager.enqueueUniqueWork(SLEEP_ALERT_WORK_NAME, policy, request)
     }

@@ -2,7 +2,9 @@
 
 **Last updated:** 2026-07-24
 
-HealthWidget is built around one rule: your data never leaves your device.
+HealthWidget is built around one rule: HealthWidget itself never sends your data anywhere.
+The one exception is entirely outside HealthWidget's own code — Android's own device backup
+system, covered in "Backups" below.
 
 ## What HealthWidget collects
 
@@ -19,9 +21,11 @@ DataStore mechanism:
 - The most recently shown tips (up to the last 30), so the same one doesn't come up again
   too soon.
 
-None of this is ever transmitted anywhere. There is no server for it to go to: the app has
-no network permission at all (it does not request `INTERNET`), so it is technically
-incapable of sending data off the device, even if it wanted to.
+HealthWidget itself never transmits any of this anywhere. There is no server for it to go
+to: the app has no network permission at all (it does not request `INTERNET`), so it is
+technically incapable of sending data off the device, even if it wanted to. The one path
+this data can travel that isn't HealthWidget's own code is Android's built-in device backup
+system — see "Backups" below.
 
 ## Tip source links
 
@@ -52,11 +56,28 @@ any other sensitive permission.
 
 ## Backups
 
-Android's built-in backup may include the small settings values described above if you
-have device backup enabled in Android system settings — the same as it would for any
-app's local preferences. This is standard Android backup behavior, not something
-HealthWidget does on its own, and can be turned off in your device's system settings at
-any time.
+HealthWidget opts in to Android's built-in backup system and explicitly includes its local
+settings and tip history in it (both the legacy pre-Android-12 backup rules and the modern
+Android 12+ rules cover the same data). What actually happens with that data depends
+entirely on your device's own backup configuration, not on anything HealthWidget does:
+
+- If you have Android device backup turned on (Settings > System > Backup, tied to your
+  Google account) or use device-to-device transfer when setting up a new phone, your
+  notification frequency, quiet hours, sleep-alert toggle, widget style, and recent tip
+  history are included, encrypted in transit and at rest by Android's backup service.
+- **This is the one case where this data leaves your device.** Android's backup service
+  uploads it to your Google account's backup storage. HealthWidget does not operate, and has
+  no access to, that storage — it's part of the operating system, governed by your Google
+  account's own settings and privacy controls — but it is a genuine exception to "nothing
+  HealthWidget stores ever leaves the device," so it's called out here explicitly rather than
+  glossed over.
+- If you have device backup turned off, none of this data goes anywhere.
+- You can turn Android backup off at any time in your device's system settings, independent
+  of HealthWidget, and it can be turned off there with no effect on the app's functionality.
+
+None of this involves any HealthWidget-operated server or infrastructure — there is none —
+and HealthWidget's own code never transmits this data itself; the only way it can leave the
+device is through Android's own OS-level backup mechanism, entirely under your control.
 
 ## Children's privacy
 

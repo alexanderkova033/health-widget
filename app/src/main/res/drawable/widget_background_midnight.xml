@@ -31,6 +31,28 @@
                 android:endColor="@android:color/transparent" />
         </shape>
     </item>
+    <!-- Crescent moon: a solid pale disc, then a second disc in the base gradient's own dark
+         tone painted over part of it, "biting" a crescent shape out rather than a full circle. -->
+    <item
+        android:width="28dp"
+        android:height="28dp"
+        android:gravity="top|right"
+        android:right="22dp"
+        android:top="12dp">
+        <shape android:shape="oval">
+            <solid android:color="@color/widget_midnight_moon_body" />
+        </shape>
+    </item>
+    <item
+        android:width="26dp"
+        android:height="26dp"
+        android:gravity="top|right"
+        android:right="10dp"
+        android:top="6dp">
+        <shape android:shape="oval">
+            <solid android:color="@color/widget_midnight_start" />
+        </shape>
+    </item>
     <item
         android:width="2.5dp"
         android:height="2.5dp"

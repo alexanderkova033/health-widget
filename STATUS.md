@@ -1,6 +1,6 @@
 # Project status
 
-_Last updated: 2026-07-24 (later same day)_
+_Last updated: 2026-07-24 (later still)_
 
 This file is a snapshot for picking the project back up — it will go stale; check `git log`
 and the repo itself for anything that matters more than this doc.
@@ -152,9 +152,76 @@ Two follow-up passes after the initial build-out:
     accent from icy mint to warm dappled gold), and each theme got a distinct base angle
     (Forest 135°, Ocean 90°, Sunset 225°, Midnight 315°) so they read as different scenes,
     not just different color stops on the same template.
+- **`feat:` DST/time-zone-safe scheduling, concurrency-safe tip advancement, backup-rules
+  fix, branding centralization, API 36 (2026-07-24, later still)** — a release-readiness
+  pass covering six things:
+  - **Scheduling is now DST/time-zone/clock-change safe.** `durationUntilNext` (`:core`)
+    moved from `LocalTime` + a naive 24h rollover to `ZonedDateTime` + an injectable `Clock`,
+    so a pending nudge or sleep alert lands on the intended wall-clock time across a DST
+    transition or a manual clock/zone change instead of literally "24 hours from now." New
+    `ClockChangeReceiver` listens for `ACTION_TIMEZONE_CHANGED`/`ACTION_TIME_CHANGED` and
+    fully recomputes and replaces scheduled work (not just tops it up); `BootReceiver` was
+    changed to do the same full recompute on boot, since the clock/zone can plausibly have
+    changed during downtime. See README "Notable design decisions" for the DST-gap/overlap
+    behavior and `NextOccurrenceTest` for the covering unit tests (normal/rolled-over/
+    already-passed occurrences, spring gap, autumn overlap, and a same-instant/different-zone
+    case — all pure JVM, no Android needed).
+  - **Tip advancement is now concurrency-safe.** `AdvanceTipUseCase` wraps its
+    read-history/select/persist sequence in a `Mutex`, closing a real read-modify-write race
+    between e.g. a widget refresh and a notification firing at the same moment. Verified with
+    a test that deliberately removed the mutex first to confirm it actually fails without it
+    (it does), then restored it.
+  - **Found and fixed a real bug while reasoning through the above**: `NudgeWorker` never
+    checked `AppSettings.notificationsEnabled` (only quiet hours) before notifying and
+    rescheduling itself, unlike `SleepAlertWorker`, which already gated on it. Fixed to match.
+  - **Backup rules were technically broken and have been fixed.** Both `backup_rules.xml` and
+    `data_extraction_rules.xml` targeted `domain="sharedpref"`, which matches nothing — the
+    app has no `SharedPreferences`, only Preferences DataStore under `files/datastore/`. Both
+    now use `domain="file" path="datastore/"`. Policy kept as "back up via Android's system
+    backup" (consistent with the project's existing framing), but `PRIVACY.md` was rewritten
+    to stop implying nothing ever leaves the device — system backup is the one real exception,
+    and it's now stated plainly rather than glossed over.
+  - **Branding centralized.** `settings_title` now references `@string/app_name` instead of
+    duplicating the literal "HealthWidget," and the widget's small brand label (previously a
+    hardcoded `"HEALTHWIDGET"` string in `TipWidget.kt`) is now `app_name` uppercased at
+    render time. A pre-release checklist warning about `applicationId` being permanent once
+    published was added to "Release readiness" below. `applicationId` itself was
+    deliberately left unchanged (`com.healthwidget.app`) — no final name has been chosen yet.
+  - **API 36.** AGP 8.7.3 to 8.10.1 (the minimum AGP version that supports `compileSdk 36`),
+    Gradle wrapper 8.9 to 8.11.1 (AGP 8.10.1's minimum required version), `compileSdk`/
+    `targetSdk` 35 to 36, `minSdk` unchanged at 26. Android SDK Platform 36 and Build-Tools 35
+    were auto-downloaded by AGP into the scratch SDK directory on first build. No other
+    dependency versions were bumped (lint flags several as outdated — `androidx.core`,
+    `lifecycle`, `activity-compose`, the Compose BOM, WorkManager, DataStore — all left as-is
+    since none were required for API 36 compatibility, matching the "don't blindly upgrade
+    everything" constraint). No manifest, notification, widget, or edge-to-edge lint issues
+    resulted from the bump; the merged manifest was inspected directly and still declares no
+    `INTERNET` permission.
+  - Android-side lifecycle/worker test coverage (Robolectric, WorkManager testing APIs) was
+    written and passing — `NudgeScheduler` no-duplicate-work, `NudgeWorker`/`SleepAlertWorker`
+    quiet-hours/permission-denial/notifications-disabled behavior, `BootReceiver`/
+    `ClockChangeReceiver` rescheduling — but was then **deliberately dropped by request**
+    before landing, along with the handful of test-only production changes it needed
+    (`HealthWidgetApp` made `open` for a test subclass, `WidgetScheduler`'s work-name
+    constants made `internal`, `BootReceiver`/`ClockChangeReceiver` given an injectable
+    `CoroutineScope`, a `junit-vintage-engine` dependency to run JUnit4-style Robolectric
+    tests on the project's JUnit5 platform setup). All of that was reverted; only the `:core`
+    tests above and the `NudgeWorker` bug fix remain. If Android-side test coverage is wanted
+    later, the approach above (documented here in case it's picked back up) worked and all
+    tests passed before being removed.
 
 ## Verified for real (not just reviewed)
 
+- The DST/time-zone-safe-scheduling/concurrency/backup-rules/branding/API-36 pass above is
+  verified via `ktlintCheck`, `lint` (0 errors), `test` (`:core` 44 tests including the new
+  DST/timezone matrix and the mutex-regression concurrency test, `:app` 10 tests, all green),
+  and a full `build` (including `assembleRelease` with R8 minification against `compileSdk`/
+  `targetSdk 36`) — all run against a real JDK 17 + Android SDK, not just reviewed. The
+  merged release manifest was read directly to confirm no `INTERNET` permission. **Not
+  verified on a physical device**: none of this pass's behavior (DST transitions, time-zone
+  changes, boot rescheduling, the backup-rules fix, the widget's branding label) has been
+  exercised on-device — DST/clock-change/boot scenarios in particular are hard to fully
+  cover any other way; see the manual test plan in this session's summary.
 - The notifications-master-switch/tip-refresh/settings-restructure pass above is verified via
   `compileDebugKotlin`, `testDebugUnitTest` (including a new `setNotificationsEnabled`
   DataStore test), and `ktlintCheck` — all green, and the build has since been installed on
@@ -194,6 +261,14 @@ Two follow-up passes after the initial build-out:
 - **Store icon**: `store-assets/play-store-icon-512.png` — flattened 512×512 PNG for the
   Play Console listing.
 - **Not yet done**:
+  - **`applicationId` (currently `com.healthwidget.app`) must be finalized before the first
+    Play Store upload — Google Play treats it as permanent once published, and changing it
+    later means a brand-new store listing with zero carried-over installs/reviews, not an
+    update.** Pick it once the final public name (Quiet Cue / MicroPause / Driftwell / other —
+    see README) is locked in, then change `applicationId` in `app/build.gradle.kts` as one of
+    the very last pre-launch steps. User-facing display text is already centralized in
+    `strings.xml`, so the name itself is a one-file edit; `applicationId` is not touched by
+    that and is intentionally left as-is (`com.healthwidget.app`) until this decision is made.
   - No Play Console developer account yet ($25, identity verification).
   - `PRIVACY.md` isn't hosted at a public URL yet (Play Console requires one — GitHub Pages
     on this repo is the easy option).
@@ -234,16 +309,27 @@ Two methodological notes for next time:
 
 ## Local environment notes
 
-This machine has **no JDK or Android SDK installed by default**. To verify builds in this
-session, a JDK 17 (Temurin) was downloaded to `%TEMP%\claude\jdk17` and a minimal Android
-SDK (platform-tools, build-tools 34, platform 35) to `%TEMP%\claude\android-sdk-empty`, both
-outside the repo and both ephemeral (not guaranteed to survive a reboot or session end). A
-future session verifying a build from scratch will need to either redo this or use a real
-Android Studio / SDK installation.
+This machine has **no JDK or Android SDK installed by default**. To verify builds, a JDK 17
+(Temurin) was downloaded to `%TEMP%\claude\jdk17` and a minimal Android SDK to
+`%TEMP%\claude\android-sdk-empty`, both outside the repo and both ephemeral (not guaranteed
+to survive a reboot or session end) — as of the API 36 migration, that SDK dir also has
+platform 36 and build-tools 35 (AGP auto-downloaded them on first build once licenses were
+pre-accepted; no `sdkmanager`/cmdline-tools install was needed). A future session verifying
+a build from scratch will need to either redo this or use a real Android Studio / SDK
+installation.
 
-Note from that setup: the first `unzip -q` extraction of the JDK zip silently dropped most
-files (only 24 of ~126 expected) with no error — if a from-scratch JDK extraction ever looks
-suspiciously small, re-extract without `-q` and check the file count before trusting it.
+Notes from repeated from-scratch JDK setups in this environment:
+- A plain `unzip -q big.zip` has silently dropped most files with no error more than once
+  (extracting only ~2 of ~500 expected files on one occasion) — always re-extract without
+  `-q` and sanity-check the file count (e.g. `find <jdk-dir> -type f | wc -l`, expect several
+  hundred) before trusting an extraction.
+- This machine can carry **orphaned Gradle/Kotlin daemons from an earlier session** still
+  running against the same scratch JDK path — if a fresh `rm -rf` of that JDK directory hits
+  "device or resource busy" on `modules`/`jrt-fs.jar` specifically, that's usually why. Check
+  `Get-Process java` (PowerShell) for processes rooted at the scratch JDK path before
+  force-deleting; stop them first (equivalent to `gradlew --stop`) rather than fighting a
+  live daemon's open file handles, which can otherwise leave a half-overwritten, broken JDK
+  copy behind.
 
 ## Assumptions and deliberate decisions worth knowing
 
@@ -257,6 +343,9 @@ suspiciously small, re-extract without `-q` and check the file count before trus
   per window, not a pool) — see `TipEngine.kt`.
 - No ViewModel, no DI framework (`AppContainer` is hand-written) — deliberate, the app is
   too small to justify either; see README "Notable design decisions."
-- AGP kept at 8.7.3 / `compileSdk 35`. Larger dependency bumps (activity-compose 1.13,
-  core-ktx 1.19, etc.) were tried and reverted after they cascaded into requiring
-  `compileSdk 36+`/AGP 9.x, which felt out of scope for a first verification pass.
+- AGP is now 8.10.1 / `compileSdk`/`targetSdk 36` (previously 8.7.3 / 35 — an earlier attempt
+  at other dependency bumps, e.g. activity-compose 1.13/core-ktx 1.19, had been reverted
+  after cascading into requiring `compileSdk 36+`/AGP 9.x, which felt out of scope at the
+  time; API 36 was later done deliberately, on its own, as its own task). AGP 9.x was
+  considered and not used — 8.10.1 is the minimum AGP version that supports `compileSdk 36`,
+  and jumping to a new major version wasn't judged necessary just to reach API 36.

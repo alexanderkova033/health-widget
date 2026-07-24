@@ -33,6 +33,7 @@
                 android:endColor="@android:color/transparent" />
         </shape>
     </item>
+    <item android:drawable="@drawable/widget_art_forest" />
     <item
         android:width="2.5dp"
         android:height="2.5dp"

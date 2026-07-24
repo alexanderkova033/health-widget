@@ -10,6 +10,12 @@
 > 2. **MicroPause** — leads with the "micro-tip, zero-friction" mechanic itself.
 > 3. **Driftwell** — softer/more brandable; "drift" nods to the passive, no-dashboard
 >    philosophy, "well" to the wellness framing.
+>
+> User-facing display text is already centralized in `strings.xml` (`app_name`, referenced
+> everywhere else needs it, including the widget's brand label) so picking a final name is
+> just an edit to that one file. **`applicationId` (currently `com.healthwidget.app`) is a
+> separate, higher-stakes decision — see the pre-release checklist in [STATUS.md](STATUS.md)
+> before the first Play Store upload.**
 
 A privacy-first Android wellness app for students and desk workers. No accounts, no
 tracking, no dashboards, no streaks. Just a home-screen widget with one rotating,
@@ -20,8 +26,10 @@ nudges — including a late-night sleep alert.
 
 **100% offline. Zero data collected.** There is no server, no analytics SDK, no crash
 reporter, no ad SDK, and the app manifest does not declare the `INTERNET` permission — so
-even a compromised dependency couldn't phone home. Every setting and the tip history live
-in on-device DataStore only. See [PRIVACY.md](PRIVACY.md) for the plain-English policy.
+even a compromised dependency couldn't phone home. Every setting and the tip history live in
+on-device DataStore, and are included in Android's own encrypted device-backup system like
+any other app's local data — see [PRIVACY.md](PRIVACY.md)'s "Backups" section for exactly
+what that does and doesn't mean.
 
 ## v1 scope
 
@@ -65,7 +73,9 @@ architecture) rather than on each other's concrete classes:
     text back to its full `Tip` (citation included) for the settings screen to display.
   - `settings/` — the `AppSettings` model (notifications master switch, nudge frequency,
     sleep alert, quiet hours, widget style) and `SettingsRepository` interface.
-  - `scheduling/` — `QuietHours` and `durationUntilNext`.
+  - `scheduling/` — `QuietHours` and `durationUntilNext(target: LocalTime, clock: Clock)`,
+    the DST/time-zone-safe "how long until this local clock time next occurs" calculation
+    (see "Notable design decisions" below).
   Everything here is trivially unit-testable and reusable as-is by a future iOS port.
 - **`:app`** — the Android application, organized by feature rather than by technical
   layer (`settings/`, `tips/`, `notifications/`, `widget/`, `boot/`). `settings/` and
@@ -115,6 +125,7 @@ graph TD
             WidgetScheduler
         end
         BootReceiver
+        ClockChangeReceiver
         DataStore[("DataStore<Preferences>")]
     end
 
@@ -147,6 +158,7 @@ graph TD
 
     BootReceiver --> NudgeScheduler
     BootReceiver --> WidgetScheduler
+    ClockChangeReceiver --> NudgeScheduler
 ```
 
 Notable design decisions:
@@ -154,6 +166,36 @@ Notable design decisions:
 - WorkManager has no "run at this exact clock time every day" primitive, so nudge/sleep
   workers reschedule themselves ~24h ahead after each run (`durationUntilNext`), rather
   than relying on `PeriodicWorkRequest`'s coarse, inexact intervals.
+- **DST/time-zone-safe scheduling**: `durationUntilNext(target: LocalTime, clock: Clock)`
+  (`:core`) computes the delay to the next occurrence of a local clock time using
+  `ZonedDateTime` rather than a naive "add 24 hours" — so a pending nudge or sleep alert
+  still lands on the intended wall-clock time across a DST transition or manual clock
+  change, not 24 real hours later. A target that falls in a spring-forward gap resolves
+  forward by the gap length; a target that falls in an autumn-fallback overlap resolves to
+  its earlier occurrence — both are `ZonedDateTime`'s own documented, deterministic
+  behavior, not custom logic, so they're easy to reason about and unit-test (see
+  `NextOccurrenceTest`, which covers both transitions plus a same-instant/different-zone
+  case). `Clock` is threaded through `NudgeScheduler`, `NudgeWorker`, and `SleepAlertWorker`
+  (each defaulting to a fresh `Clock.systemDefaultZone()`, never a cached one — the zone it
+  reports is frozen at the moment it's created) so every delay computation shares the same
+  DST-safe path. `ClockChangeReceiver` listens for `ACTION_TIMEZONE_CHANGED` and
+  `ACTION_TIME_CHANGED` (both exempt from Android's implicit-broadcast manifest
+  restrictions, like `BOOT_COMPLETED`) and fully recomputes and replaces
+  (`NudgeScheduler.rescheduleAll`, `ExistingWorkPolicy.REPLACE`) rather than merely checking
+  whether work already exists — a pending one-time work item's delay was computed against
+  whatever clock/zone was in effect when it was enqueued, so a subsequent zone or clock
+  change can only be corrected by recomputing it, not by leaving it alone. `BootReceiver`
+  now does the same full recompute (previously it only topped up missing work), since a
+  reboot is a plausible point for the clock/zone to have silently changed underneath it.
+- **Concurrency-safe tip advancement**: `AdvanceTipUseCase` (`:core`) wraps its
+  read-history/select-tip/persist-tip sequence in a `kotlinx.coroutines.sync.Mutex`, so a
+  widget refresh and a notification firing at the same moment can't both read the same
+  stale history and pick the same tip. The mutex lives on the single `AdvanceTipUseCase`
+  instance `AppContainer` hands out (a `by lazy` singleton, already required for the
+  anti-repeat rule to hold across callers), so every caller shares the same lock without
+  each construction creating a new one. See `AdvanceTipUseCaseTest`'s concurrent-advances
+  test, which launches N concurrent advances against an N-tip pool and asserts all N tips
+  come out distinct — a real (if narrow) race in the old unsynchronized version.
 - The Glance widget's `updatePeriodMillis` is set to `0`; refresh is driven entirely by a
   2-hour WorkManager periodic job, since the AppWidget framework's own update period has an
   unreliable 30-minute floor.
@@ -185,11 +227,31 @@ Notable design decisions:
 - A user-configurable widget refresh interval (1h/2h/4h) was built, then removed: FR1 only
   requires "at least every 2 hours," and the extra setting wasn't worth the added surface
   area. `WidgetScheduler` now hardcodes a 2-hour interval again.
+- **Backup policy**: the app opts in to Android's built-in backup system and explicitly
+  includes settings + tip history in both `backup_rules.xml` (legacy, API < 31) and
+  `data_extraction_rules.xml` (API 31+) — chosen over excluding this data, since it's the
+  option consistent with the project's existing "your local settings/history, backed up
+  like any other app's" framing, and it's all non-sensitive. Both files previously pointed
+  at `domain="sharedpref"`, which matched nothing (the app has no `SharedPreferences` at
+  all — settings and tip history are Preferences DataStore, stored under `files/datastore/`,
+  not `shared_prefs/`), so backup coverage looked configured but silently did nothing; both
+  now correctly use `domain="file" path="datastore/"`. See [PRIVACY.md](PRIVACY.md)'s
+  "Backups" section for what this does and doesn't mean for the user — notably, this is the
+  one case where locally-stored data can leave the device (via Android's own backup
+  service), which the policy is written to state plainly rather than gloss over.
+- `NudgeWorker` now gates both showing the notification and rescheduling itself on
+  `AppSettings.notificationsEnabled`, matching the pattern `SleepAlertWorker` already used
+  (only quiet hours was checked before). Without this, a worker already in flight when the
+  user disables notifications could win a race against `NudgeScheduler.rescheduleAll`'s
+  cancellation and re-enqueue itself for tomorrow regardless — a real latent bug, not just a
+  hypothetical one, since `rescheduleAll` and an in-flight worker's own reschedule both
+  write to the same unique work name from different call sites.
 
 ## Tech stack
 
 Kotlin · Jetpack Compose (Material 3) · Glance · WorkManager · DataStore (Preferences) ·
-Gradle Kotlin DSL with a version catalog. `minSdk 26`, `compileSdk`/`targetSdk 35`.
+Gradle Kotlin DSL with a version catalog (AGP 8.10.1, Gradle 8.11.1). `minSdk 26`,
+`compileSdk`/`targetSdk 36`.
 
 ## Building
 

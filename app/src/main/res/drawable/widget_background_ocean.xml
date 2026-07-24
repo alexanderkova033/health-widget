@@ -31,6 +31,7 @@
                 android:endColor="@android:color/transparent" />
         </shape>
     </item>
+    <item android:drawable="@drawable/widget_art_ocean" />
     <item
         android:width="3.5dp"
         android:height="3.5dp"

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Two overlapping wave-crest bands near the bottom, out of phase with each other. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="300dp"
+    android:height="150dp"
+    android:viewportWidth="300"
+    android:viewportHeight="150">
+    <path
+        android:fillColor="@color/widget_ocean_wave_back"
+        android:pathData="M0,120 C40,100 80,100 120,120 C160,140 200,140 240,120 C270,105 285,105 300,115 L300,150 L0,150 Z" />
+    <path
+        android:fillColor="@color/widget_ocean_wave_front"
+        android:pathData="M0,140 C50,120 90,120 140,138 C180,152 220,152 260,136 C280,128 290,128 300,132 L300,150 L0,150 Z" />
+</vector>

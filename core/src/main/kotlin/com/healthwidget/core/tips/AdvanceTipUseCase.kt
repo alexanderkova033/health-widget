@@ -1,6 +1,8 @@
 package com.healthwidget.core.tips
 
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.time.LocalTime
 
 /**
@@ -9,15 +11,27 @@ import java.time.LocalTime
  * fallback must all apply identically for the anti-repeat guarantee (FR5, no repeats within
  * the last [TipHistoryRepository.MAX_RECENT_TIPS] tips) to actually hold. Pulled out here so
  * those three call sites share one implementation instead of each re-deriving it.
+ *
+ * Read-select-persist is otherwise a classic read-modify-write race: a widget refresh and a
+ * notification worker calling this concurrently could both read the same [recentTips][TipHistoryRepository.recentTips]
+ * snapshot before either has persisted, and independently pick (and possibly repeat) the same
+ * tip. [mutex] serializes the whole operation per process; it's a field on this class rather
+ * than a `companion object`/top-level lock so it stays scoped to one [AdvanceTipUseCase]
+ * instance — callers must share the single instance [com.healthwidget.app.AppContainer] already
+ * hands out (a `by lazy` singleton) for the lock to actually cover every caller, which is also
+ * exactly what the shared-instance design already required for the anti-repeat rule itself.
  */
 class AdvanceTipUseCase(
     private val tipEngine: TipEngine,
     private val tipHistoryRepository: TipHistoryRepository,
 ) {
-    suspend operator fun invoke(now: LocalTime): Tip {
-        val recentTips = tipHistoryRepository.recentTips.first()
-        val tip = tipEngine.messageFor(now, recentTips)
-        tipHistoryRepository.recordTip(tip.text)
-        return tip
-    }
+    private val mutex = Mutex()
+
+    suspend operator fun invoke(now: LocalTime): Tip =
+        mutex.withLock {
+            val recentTips = tipHistoryRepository.recentTips.first()
+            val tip = tipEngine.messageFor(now, recentTips)
+            tipHistoryRepository.recordTip(tip.text)
+            tip
+        }
 }

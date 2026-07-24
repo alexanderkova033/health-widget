@@ -7,9 +7,10 @@
     <string name="channel_sleep_name">Sleep reminder</string>
     <string name="channel_sleep_description">A single reminder around bedtime to consider winding down.</string>
 
-    <string name="widget_description">Shows one rotating wellness micro-tip. Tap to open settings.</string>
+    <string name="widget_description">Shows one rotating wellness micro-tip. Tap for a new tip, or use the gear icon for settings.</string>
+    <string name="widget_settings_action">Open settings</string>
 
-    <string name="settings_title">HealthWidget</string>
+    <string name="settings_title">@string/app_name</string>
 
     <string name="settings_notifications_title">Notifications</string>
     <string name="settings_notifications_off_hint">Off — no nudges, no sleep alert.</string>

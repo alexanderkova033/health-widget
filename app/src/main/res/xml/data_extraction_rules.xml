@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Android 12+ (API 31+) cloud backup / device-transfer rules. Same rationale as
-     backup_rules.xml: only local, non-sensitive settings are persisted. -->
+<!-- Android 12+ (API 31+) cloud backup / device-transfer rules. Same rationale and the same
+     `file`-domain fix as backup_rules.xml: the app's settings and tip history live in
+     Preferences DataStore under files/datastore/, not shared_prefs/, so a `sharedpref` domain
+     rule (what this file used to contain) matched nothing. -->
 <data-extraction-rules>
     <cloud-backup>
-        <include domain="sharedpref" path="." />
+        <include domain="file" path="datastore/" />
     </cloud-backup>
     <device-transfer>
-        <include domain="sharedpref" path="." />
+        <include domain="file" path="datastore/" />
     </device-transfer>
 </data-extraction-rules>

@@ -22,12 +22,12 @@ android {
     namespace = "com.healthwidget.app"
     // minSdk 26 gives us java.time natively (no desugaring needed by TipEngine)
     // and Glance's minimum supported API level.
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.healthwidget.app"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 1
         versionName = "0.1.0"
 

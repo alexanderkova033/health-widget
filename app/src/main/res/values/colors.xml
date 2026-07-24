@@ -9,22 +9,30 @@
     <color name="widget_forest_canopy_glow">#4D2ED2A0</color>
     <color name="widget_forest_light">#33F5E9A0</color>
     <color name="widget_forest_firefly">#B3C3FF37</color>
+    <color name="widget_forest_tree_back">#B31A4A32</color>
+    <color name="widget_forest_tree_front">#E60A2416</color>
 
     <color name="widget_ocean_start">#0D47A1</color>
     <color name="widget_ocean_end">#26C6DA</color>
     <color name="widget_ocean_shaft">#3DBEEFFF</color>
     <color name="widget_ocean_depth">#4D00131C</color>
     <color name="widget_ocean_bubble">#99AEE9FF</color>
+    <color name="widget_ocean_wave_back">#26D8F5FF</color>
+    <color name="widget_ocean_wave_front">#40C8ECFF</color>
 
     <color name="widget_sunset_start">#8E24AA</color>
     <color name="widget_sunset_end">#FF7043</color>
     <color name="widget_sunset_horizon_glow">#59FFC773</color>
     <color name="widget_sunset_bloom">#40FF8FD1</color>
     <color name="widget_sunset_ember">#B3FFA557</color>
+    <color name="widget_sunset_sun">#CCFFC773</color>
+    <color name="widget_sunset_hill_back">#B3300F08</color>
+    <color name="widget_sunset_hill_front">#E6170603</color>
 
     <color name="widget_midnight_start">#0D1117</color>
     <color name="widget_midnight_end">#2E2A5C</color>
     <color name="widget_midnight_moon_glow">#33E8F4FF</color>
     <color name="widget_midnight_aurora_glow">#406A3FD6</color>
     <color name="widget_midnight_star">#B3FFFFFF</color>
+    <color name="widget_midnight_moon_body">#E6EAF5FA</color>
 </resources>

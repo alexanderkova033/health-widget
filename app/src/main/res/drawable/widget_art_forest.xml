@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Bottom-anchored tree-line silhouette, two depth tones. Stretches to fill whatever bounds
+     the layer-list item gives it (Android widgets are user-resizable, so an exact aspect
+     ratio can't be guaranteed) — simple triangular pines read fine even a bit stretched. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="300dp"
+    android:height="150dp"
+    android:viewportWidth="300"
+    android:viewportHeight="150">
+    <path
+        android:fillColor="@color/widget_forest_tree_back"
+        android:pathData="M10,150 L100,150 L55,60 Z M120,150 L200,150 L160,55 Z" />
+    <path
+        android:fillColor="@color/widget_forest_tree_front"
+        android:pathData="M60,150 L150,150 L100,90 Z M170,150 L260,150 L215,75 Z M230,150 L300,150 L268,100 Z" />
+</vector>
