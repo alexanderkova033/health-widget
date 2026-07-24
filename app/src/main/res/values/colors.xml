@@ -2,6 +2,12 @@
 <resources>
     <color name="ic_launcher_background">#1B5E4F</color>
 
+    <!-- Thin translucent edge drawn on top of every widget style's background, so the card
+         reads as a distinct object against arbitrary home-screen wallpaper instead of a bare
+         rectangle of color with no boundary. Same value across all styles for a consistent
+         "frame" language. -->
+    <color name="widget_card_border">#4DFFFFFF</color>
+
     <!-- Deep emerald-to-near-black green (previously drifted into blue-gray, which read as
          generic rather than "forest" and blurred together with Ocean/Midnight's cool tones). -->
     <color name="widget_forest_start">#1E6B4F</color>
