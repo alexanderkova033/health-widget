@@ -11,6 +11,8 @@ import java.time.LocalTime
 interface SettingsRepository {
     val settings: Flow<AppSettings>
 
+    suspend fun setNotificationsEnabled(enabled: Boolean)
+
     suspend fun setNotificationFrequency(frequency: Int)
 
     suspend fun setSleepAlertEnabled(enabled: Boolean)

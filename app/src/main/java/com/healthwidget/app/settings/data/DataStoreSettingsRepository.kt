@@ -21,6 +21,10 @@ import java.time.LocalTime
 class DataStoreSettingsRepository(private val dataStore: DataStore<Preferences>) : SettingsRepository {
     override val settings: Flow<AppSettings> = dataStore.data.map { it.toAppSettings() }
 
+    override suspend fun setNotificationsEnabled(enabled: Boolean) {
+        dataStore.edit { it[Keys.NOTIFICATIONS_ENABLED] = enabled }
+    }
+
     override suspend fun setNotificationFrequency(frequency: Int) {
         require(frequency in AppSettings.MIN_NOTIFICATION_FREQUENCY..AppSettings.MAX_NOTIFICATION_FREQUENCY) {
             "notificationFrequency must be in " +
@@ -49,6 +53,7 @@ class DataStoreSettingsRepository(private val dataStore: DataStore<Preferences>)
 
     private fun Preferences.toAppSettings(): AppSettings =
         AppSettings(
+            notificationsEnabled = this[Keys.NOTIFICATIONS_ENABLED] ?: AppSettings.DEFAULT.notificationsEnabled,
             notificationFrequency = this[Keys.NOTIFICATION_FREQUENCY] ?: AppSettings.DEFAULT.notificationFrequency,
             sleepAlertEnabled = this[Keys.SLEEP_ALERT_ENABLED] ?: AppSettings.DEFAULT.sleepAlertEnabled,
             quietHoursStart =
@@ -61,6 +66,7 @@ class DataStoreSettingsRepository(private val dataStore: DataStore<Preferences>)
     private inline fun <reified T : Enum<T>> String.toEnumOrNull(): T? = enumValues<T>().firstOrNull { it.name == this }
 
     private object Keys {
+        val NOTIFICATIONS_ENABLED = booleanPreferencesKey("notifications_enabled")
         val NOTIFICATION_FREQUENCY = intPreferencesKey("notification_frequency")
         val SLEEP_ALERT_ENABLED = booleanPreferencesKey("sleep_alert_enabled")
         val QUIET_HOURS_START = stringPreferencesKey("quiet_hours_start")

@@ -33,7 +33,10 @@ v1 is intentionally passive:
   in Settings — the preview renders the same drawable the widget itself uses, so it never
   drifts from the real thing.
 - A "Why this tip?" card in Settings showing the current tip's citation, with a button that
-  opens the primary source in the browser.
+  opens the primary source in the browser, and a button to pull a different tip on demand.
+- A single master notifications switch; turning it off silences nudges and the sleep alert
+  together without discarding your frequency/quiet-hours choices, and collapses that whole
+  section down to a one-line "off" status.
 - 0-6 daily notification nudges (user-configurable), each a rotating micro-tip.
 - One optional sleep alert at 23:00.
 - User-configurable quiet hours (default 23:30-07:00) during which nudges are silent — the
@@ -60,8 +63,8 @@ architecture) rather than on each other's concrete classes:
     shown (by text) rather than just the single previous one, and `TipEngine` excludes all
     of them when picking the next tip. `TipEngine.findByText` resolves a persisted tip's
     text back to its full `Tip` (citation included) for the settings screen to display.
-  - `settings/` — the `AppSettings` model (notification frequency, sleep alert, quiet
-    hours, widget style) and `SettingsRepository` interface.
+  - `settings/` — the `AppSettings` model (notifications master switch, nudge frequency,
+    sleep alert, quiet hours, widget style) and `SettingsRepository` interface.
   - `scheduling/` — `QuietHours` and `durationUntilNext`.
   Everything here is trivially unit-testable and reusable as-is by a future iOS port.
 - **`:app`** — the Android application, organized by feature rather than by technical
@@ -168,14 +171,17 @@ Notable design decisions:
   the settings screen's live preview/style swatches — Compose's own `painterResource` only
   handles vector/raster drawables, not `<shape>`/`<layer-list>` resources, and a hand-picked
   `Brush.linearGradient` stand-in would drift from the real widget over time.
-- Widget style changes (and any future direct widget re-render trigger) go through
-  `WidgetScheduler.refreshNow()` — a WorkManager job — rather than calling
-  `GlanceAppWidget.updateAll()` directly from the settings screen's own coroutine scope.
-  The direct call worked once but then got stuck until the app was force-restarted: it ran
-  in a scope tied to the screen's lifecycle, which could be cancelled mid-composition if the
-  user navigated away, apparently leaving Glance's widget session for that ID stuck. Routing
-  through the same WorkManager path the periodic refresh already uses sidesteps that
-  entirely.
+- Widget re-renders triggered from the settings screen (a style change, or the manual
+  "get a different tip" button) call `GlanceAppWidget.updateAll()` inside
+  `HealthWidgetApp.applicationScope` (a process-lifetime `CoroutineScope`), not the settings
+  screen's own `rememberCoroutineScope()`. Calling it directly from the screen's scope worked
+  once, then silently stopped updating the widget until the app was force-restarted: that
+  scope is cancelled if the user navigates away before the Glance composition finishes,
+  apparently leaving that widget ID's Glance session stuck. Routing it through a one-time
+  `WorkManager` job instead (mirroring `WidgetRefreshWorker`) fixed the stuck-session problem
+  but reintroduced a multi-second lag before the user-visible change appeared — unacceptable
+  for something tapped expecting instant feedback — so it now runs directly, just in a scope
+  that outlives the screen instead of one that doesn't.
 - A user-configurable widget refresh interval (1h/2h/4h) was built, then removed: FR1 only
   requires "at least every 2 hours," and the extra setting wasn't worth the added surface
   area. `WidgetScheduler` now hardcodes a 2-hour interval again.

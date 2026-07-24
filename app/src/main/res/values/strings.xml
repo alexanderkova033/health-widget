@@ -11,6 +11,9 @@
 
     <string name="settings_title">HealthWidget</string>
 
+    <string name="settings_notifications_title">Notifications</string>
+    <string name="settings_notifications_off_hint">Off — no nudges, no sleep alert.</string>
+
     <string name="settings_frequency_title">Nudge frequency</string>
     <string name="settings_frequency_off">Off</string>
     <plurals name="settings_frequency_times">
@@ -40,9 +43,10 @@
     <string name="settings_tip_source_quote">“%1$s”</string>
     <string name="settings_tip_source_action">Read the source</string>
     <string name="settings_tip_source_hint">Opens in your browser</string>
+    <string name="settings_tip_refresh_action">Get a different tip</string>
 
     <string name="settings_about_title">About</string>
-    <string name="settings_about_privacy_promise">HealthWidget works 100% offline. No accounts, no analytics, no ads, and nothing ever leaves your device — not even anonymized data. All settings and tip history stay in local storage only.</string>
+    <string name="settings_about_privacy_promise">Everything stays on your phone — tips, settings, history. No account, no tracking, no ads.</string>
 
     <string name="action_ok">OK</string>
     <string name="action_cancel">Cancel</string>

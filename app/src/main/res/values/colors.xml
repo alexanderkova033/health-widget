@@ -2,10 +2,12 @@
 <resources>
     <color name="ic_launcher_background">#1B5E4F</color>
 
-    <color name="widget_gradient_start">#1B5E4F</color>
-    <color name="widget_gradient_end">#3A5F72</color>
+    <!-- Deep emerald-to-near-black green (previously drifted into blue-gray, which read as
+         generic rather than "forest" and blurred together with Ocean/Midnight's cool tones). -->
+    <color name="widget_forest_start">#1E6B4F</color>
+    <color name="widget_forest_end">#0B2E1F</color>
     <color name="widget_forest_canopy_glow">#4D2ED2A0</color>
-    <color name="widget_forest_light">#33E8FFF0</color>
+    <color name="widget_forest_light">#33F5E9A0</color>
     <color name="widget_forest_firefly">#B3C3FF37</color>
 
     <color name="widget_ocean_start">#0D47A1</color>

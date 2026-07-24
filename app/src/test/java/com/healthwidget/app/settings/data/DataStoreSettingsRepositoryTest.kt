@@ -35,6 +35,13 @@ class DataStoreSettingsRepositoryTest {
         }
 
     @Test
+    fun `setNotificationsEnabled persists`() =
+        runTest {
+            repository.setNotificationsEnabled(false)
+            assertThat(repository.settings.first().notificationsEnabled).isFalse()
+        }
+
+    @Test
     fun `setNotificationFrequency persists and is reflected in settings flow`() =
         runTest {
             repository.setNotificationFrequency(0)

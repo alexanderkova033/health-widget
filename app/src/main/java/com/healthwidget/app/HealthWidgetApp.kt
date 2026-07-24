@@ -13,9 +13,11 @@ import kotlinx.coroutines.launch
 class HealthWidgetApp : Application() {
     val container: AppContainer by lazy { AppContainer(this) }
 
-    // Lives as long as the process; used only to fire-and-forget the startup scheduling
-    // safety net below, never for long-running work.
-    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    // Lives as long as the process — for fire-and-forget work that must survive whatever UI
+    // triggered it (e.g. the startup scheduling safety net below, or a widget re-render
+    // kicked off from the settings screen), never for long-running work. A screen-scoped
+    // rememberCoroutineScope() would get cancelled if the user navigates away mid-flight.
+    internal val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     override fun onCreate() {
         super.onCreate()

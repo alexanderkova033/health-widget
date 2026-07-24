@@ -30,7 +30,14 @@ class NudgeScheduler(private val context: Context) {
         settings: AppSettings,
         policy: ExistingWorkPolicy,
     ) {
-        val nudgeTimes = NUDGE_TIMES_BY_FREQUENCY.getValue(settings.notificationFrequency)
+        // The master switch overrides frequency/sleep-alert rather than clearing them, so
+        // turning it back on restores whatever cadence the user had dialed in before.
+        val nudgeTimes =
+            if (settings.notificationsEnabled) {
+                NUDGE_TIMES_BY_FREQUENCY.getValue(settings.notificationFrequency)
+            } else {
+                emptyList()
+            }
         for (slot in 0 until MAX_NUDGE_SLOTS) {
             val workName = nudgeWorkName(slot)
             if (slot in nudgeTimes.indices) {
@@ -40,7 +47,7 @@ class NudgeScheduler(private val context: Context) {
             }
         }
 
-        if (settings.sleepAlertEnabled) {
+        if (settings.notificationsEnabled && settings.sleepAlertEnabled) {
             enqueueSleepAlert(policy)
         } else {
             workManager.cancelUniqueWork(SLEEP_ALERT_WORK_NAME)

@@ -3,7 +3,7 @@
     <item>
         <shape android:shape="rectangle">
             <gradient
-                android:angle="135"
+                android:angle="225"
                 android:startColor="@color/widget_sunset_start"
                 android:endColor="@color/widget_sunset_end"
                 android:type="linear" />

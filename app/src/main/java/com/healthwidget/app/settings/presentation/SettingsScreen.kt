@@ -28,10 +28,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Bedtime
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Science
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Widgets
@@ -39,6 +40,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
@@ -70,9 +72,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.core.content.ContextCompat
+import androidx.glance.appwidget.updateAll
+import com.healthwidget.app.HealthWidgetApp
 import com.healthwidget.app.R
 import com.healthwidget.app.notifications.NudgeScheduler
-import com.healthwidget.app.widget.WidgetScheduler
+import com.healthwidget.app.widget.TipWidget
 import com.healthwidget.app.widget.backgroundDrawableRes
 import com.healthwidget.core.settings.AppSettings
 import com.healthwidget.core.settings.SettingsRepository
@@ -114,6 +118,9 @@ fun SettingsScreen(
 
     fun updateSettings(newSettings: AppSettings) {
         scope.launch {
+            if (newSettings.notificationsEnabled != settings.notificationsEnabled) {
+                settingsRepository.setNotificationsEnabled(newSettings.notificationsEnabled)
+            }
             if (newSettings.notificationFrequency != settings.notificationFrequency) {
                 settingsRepository.setNotificationFrequency(newSettings.notificationFrequency)
             }
@@ -127,14 +134,7 @@ fun SettingsScreen(
             }
             if (newSettings.widgetStyle != settings.widgetStyle) {
                 settingsRepository.setWidgetStyle(newSettings.widgetStyle)
-                // Not TipWidget().updateAll(context) directly: that call runs in this
-                // Composable's own coroutine scope, which is cancelled if the user
-                // navigates away before the Glance composition finishes — leaving the
-                // widget's session stuck until the process restarts. refreshNow() runs
-                // the same update inside a WorkManager job instead, which isn't tied to
-                // this screen's lifecycle (same reasoning WidgetRefreshWorker already
-                // relies on for the periodic refresh).
-                WidgetScheduler(context).refreshNow()
+                refreshWidgetNow(context)
             }
             NudgeScheduler(context).rescheduleAll(newSettings)
         }
@@ -165,33 +165,10 @@ fun SettingsScreen(
             )
         }
 
-        currentTip?.let { tip ->
-            SectionCard {
-                TipSourceSection(tip)
-            }
-        }
-
         SectionCard {
-            FrequencySection(
-                frequency = settings.notificationFrequency,
-                onFrequencyChange = { updateSettings(settings.copy(notificationFrequency = it)) },
-            )
-        }
-
-        SectionCard {
-            SleepAlertSection(
-                enabled = settings.sleepAlertEnabled,
-                onEnabledChange = { updateSettings(settings.copy(sleepAlertEnabled = it)) },
-            )
-        }
-
-        SectionCard {
-            QuietHoursSection(
-                start = settings.quietHoursStart,
-                end = settings.quietHoursEnd,
-                onChange = { start, end ->
-                    updateSettings(settings.copy(quietHoursStart = start, quietHoursEnd = end))
-                },
+            NotificationsSection(
+                settings = settings,
+                onSettingsChange = { updateSettings(it) },
             )
         }
 
@@ -202,9 +179,43 @@ fun SettingsScreen(
             )
         }
 
+        currentTip?.let { tip ->
+            SectionCard {
+                TipSourceSection(
+                    tip = tip,
+                    onRefresh = { refreshTipNow(context) },
+                )
+            }
+        }
+
         SectionCard {
             AboutSection()
         }
+    }
+}
+
+/**
+ * Re-renders the widget right away (new style, or a manually refreshed tip). Launched in
+ * [HealthWidgetApp.applicationScope] rather than this screen's own coroutine scope: the
+ * latter is cancelled if the user navigates away before the Glance composition finishes,
+ * which previously left the widget's Glance session stuck until the app was force-restarted.
+ * Also avoids the multi-second lag of routing through a WorkManager job (as `refreshNow()`
+ * did) for what the user expects to see change instantly.
+ */
+private fun refreshWidgetNow(context: Context) {
+    val app = context.applicationContext as HealthWidgetApp
+    app.applicationScope.launch {
+        TipWidget().updateAll(app)
+    }
+}
+
+/** Picks a new tip out of turn (same selection/anti-repeat logic as the scheduled refresh)
+ * and pushes it to the widget immediately. */
+private fun refreshTipNow(context: Context) {
+    val app = context.applicationContext as HealthWidgetApp
+    app.applicationScope.launch {
+        app.container.advanceTip(LocalTime.now())
+        TipWidget().updateAll(app)
     }
 }
 
@@ -214,6 +225,7 @@ private fun needsNotificationPermission(
 ): Boolean =
     Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
         !granted &&
+        settings.notificationsEnabled &&
         (settings.notificationFrequency > 0 || settings.sleepAlertEnabled)
 
 private fun hasNotificationPermission(context: Context): Boolean {
@@ -259,6 +271,51 @@ private fun NotificationPermissionCard(onAllowClick: () -> Unit) {
     }
 }
 
+/** Umbrella section for everything notification-related: a master switch up top, then
+ * frequency/sleep-alert/quiet-hours underneath — collapsed to a one-line status when the
+ * switch is off, since none of that detail matters while nothing can fire anyway. */
+@Composable
+private fun NotificationsSection(
+    settings: AppSettings,
+    onSettingsChange: (AppSettings) -> Unit,
+) {
+    SectionTitle(
+        icon = Icons.Filled.Notifications,
+        text = stringResource(R.string.settings_notifications_title),
+        trailing = {
+            Switch(
+                checked = settings.notificationsEnabled,
+                onCheckedChange = { onSettingsChange(settings.copy(notificationsEnabled = it)) },
+            )
+        },
+    )
+
+    if (!settings.notificationsEnabled) {
+        Text(
+            text = stringResource(R.string.settings_notifications_off_hint),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        return
+    }
+
+    FrequencySection(
+        frequency = settings.notificationFrequency,
+        onFrequencyChange = { onSettingsChange(settings.copy(notificationFrequency = it)) },
+    )
+    Spacer(Modifier.height(20.dp))
+    SleepAlertSection(
+        enabled = settings.sleepAlertEnabled,
+        onEnabledChange = { onSettingsChange(settings.copy(sleepAlertEnabled = it)) },
+    )
+    Spacer(Modifier.height(20.dp))
+    QuietHoursSection(
+        start = settings.quietHoursStart,
+        end = settings.quietHoursEnd,
+        onChange = { start, end -> onSettingsChange(settings.copy(quietHoursStart = start, quietHoursEnd = end)) },
+    )
+}
+
 @Composable
 private fun FrequencySection(
     frequency: Int,
@@ -268,7 +325,7 @@ private fun FrequencySection(
     // dragging without persisting/rescheduling on every intermediate frame (only on release).
     var sliderValue by remember(frequency) { mutableStateOf(frequency.toFloat()) }
 
-    SectionTitle(icon = Icons.Filled.Notifications, text = stringResource(R.string.settings_frequency_title))
+    SubsectionTitle(stringResource(R.string.settings_frequency_title))
     Text(frequencyLabel(sliderValue.toInt()), style = MaterialTheme.typography.bodyLarge)
     Slider(
         value = sliderValue,
@@ -292,7 +349,7 @@ private fun SleepAlertSection(
     enabled: Boolean,
     onEnabledChange: (Boolean) -> Unit,
 ) {
-    SectionTitle(icon = Icons.Filled.Bedtime, text = stringResource(R.string.settings_sleep_alert_title))
+    SubsectionTitle(stringResource(R.string.settings_sleep_alert_title))
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -316,7 +373,7 @@ private fun QuietHoursSection(
 ) {
     var editing by remember { mutableStateOf<QuietHoursField?>(null) }
 
-    SectionTitle(icon = Icons.Filled.Schedule, text = stringResource(R.string.settings_quiet_hours_title))
+    SubsectionTitle(stringResource(R.string.settings_quiet_hours_title))
     Text(stringResource(R.string.settings_quiet_hours_description), style = MaterialTheme.typography.bodyMedium)
     Spacer(Modifier.height(8.dp))
     Row {
@@ -519,10 +576,22 @@ private fun WidgetStyle.label(): String =
     }
 
 @Composable
-private fun TipSourceSection(tip: Tip) {
-    val context = LocalContext.current
-
-    SectionTitle(icon = Icons.Filled.Science, text = stringResource(R.string.settings_tip_source_title))
+private fun TipSourceSection(
+    tip: Tip,
+    onRefresh: () -> Unit,
+) {
+    SectionTitle(
+        icon = Icons.Filled.Science,
+        text = stringResource(R.string.settings_tip_source_title),
+        trailing = {
+            IconButton(onClick = onRefresh) {
+                Icon(
+                    imageVector = Icons.Filled.Refresh,
+                    contentDescription = stringResource(R.string.settings_tip_refresh_action),
+                )
+            }
+        },
+    )
     Text(
         text = stringResource(R.string.settings_tip_source_quote, tip.text),
         style = MaterialTheme.typography.bodyLarge,
@@ -531,6 +600,7 @@ private fun TipSourceSection(tip: Tip) {
     Spacer(Modifier.height(8.dp))
     Text(text = tip.sourceLabel, style = MaterialTheme.typography.bodyMedium)
     Spacer(Modifier.height(8.dp))
+    val context = LocalContext.current
     TextButton(onClick = { openSource(context, tip.sourceUrl) }) {
         Text(stringResource(R.string.settings_tip_source_action))
     }
@@ -554,24 +624,63 @@ private fun openSource(
     }
 }
 
+/** Collapsed by default: this is boilerplate/legal-ish content the user rarely needs to
+ * revisit, so it shouldn't cost permanent scroll space on every settings visit. */
 @Composable
 private fun AboutSection() {
-    SectionTitle(icon = Icons.Filled.Shield, text = stringResource(R.string.settings_about_title))
-    Text(
-        text = stringResource(R.string.settings_about_privacy_promise),
-        style = MaterialTheme.typography.bodyMedium,
-    )
+    var expanded by rememberSaveable { mutableStateOf(false) }
+
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable { expanded = !expanded },
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(imageVector = Icons.Filled.Shield, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            Spacer(Modifier.width(8.dp))
+            Text(text = stringResource(R.string.settings_about_title), style = MaterialTheme.typography.titleLarge)
+        }
+        Icon(
+            imageVector = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+            contentDescription = null,
+        )
+    }
+
+    if (expanded) {
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = stringResource(R.string.settings_about_privacy_promise),
+            style = MaterialTheme.typography.bodyMedium,
+        )
+    }
 }
 
 @Composable
 private fun SectionTitle(
     icon: ImageVector,
     text: String,
+    trailing: @Composable () -> Unit = {},
 ) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(imageVector = icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-        Spacer(Modifier.width(8.dp))
-        Text(text = text, style = MaterialTheme.typography.titleLarge)
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(imageVector = icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            Spacer(Modifier.width(8.dp))
+            Text(text = text, style = MaterialTheme.typography.titleLarge)
+        }
+        trailing()
     }
     Spacer(Modifier.height(8.dp))
+}
+
+@Composable
+private fun SubsectionTitle(text: String) {
+    Text(text = text, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+    Spacer(Modifier.height(4.dp))
 }

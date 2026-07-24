@@ -23,7 +23,7 @@ class SleepAlertWorker(
         val container = (applicationContext as HealthWidgetApp).container
         val settings = container.settingsRepository.settings.first()
 
-        if (settings.sleepAlertEnabled) {
+        if (settings.notificationsEnabled && settings.sleepAlertEnabled) {
             val message = container.tipEngine.messageFor(NudgeScheduler.SLEEP_ALERT_TIME, recentTips = emptyList())
             NotificationHelper.showSleepAlert(applicationContext, message.text)
 

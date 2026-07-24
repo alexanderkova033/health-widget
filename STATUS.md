@@ -86,16 +86,31 @@ Two follow-up passes after the initial build-out:
     tip's citation with a button that opens `sourceUrl` in the system browser
     (`Intent.ACTION_VIEW`) — no `INTERNET` permission needed for that, since the browser
     process makes the request, not this app.
-  - **Real bug found and fixed**: changing the widget style worked the *first* time, then
-    silently stopped working until the app was force-stopped and relaunched. Root cause:
-    the style-change handler called `TipWidget().updateAll(context)` directly inside the
-    settings screen's own `rememberCoroutineScope()`-backed coroutine, which is cancelled
-    if the user navigates away before the Glance composition finishes — apparently leaving
-    that widget ID's Glance session stuck until the process died. Fixed by routing through
-    `WidgetScheduler.refreshNow()` (a WorkManager one-time job) instead, mirroring how
-    `WidgetRefreshWorker` already reliably drives the periodic refresh. Confirmed via
-    `adb`/screenshots before the fix (reproduced exactly as described) — not yet
-    re-confirmed on-device after the fix (pending device reconnect).
+  - **Real bug found and fixed, in two attempts**: changing the widget style worked the
+    *first* time, then silently stopped working until the app was force-stopped and
+    relaunched. Root cause: the style-change handler called `TipWidget().updateAll(context)`
+    directly inside the settings screen's own `rememberCoroutineScope()`-backed coroutine,
+    which is cancelled if the user navigates away before the Glance composition finishes —
+    apparently leaving that widget ID's Glance session stuck until the process died.
+    - First attempt: routed the call through `WidgetScheduler.refreshNow()` (a one-time
+      `WorkManager` job), mirroring how `WidgetRefreshWorker` drives the periodic refresh.
+      This fixed the "stuck after one change" symptom (confirmed on-device), but introduced
+      a new problem — the user reported a multi-second **lag** before the background
+      actually changed, and sometimes it didn't visibly change at all within the time they
+      were watching. `WorkManager`'s scheduler doesn't guarantee near-instant execution for
+      a plain (non-expedited) one-time request, which is fine for a background periodic
+      refresh but not for something tapped expecting to see change immediately.
+    - Second attempt (current): call `TipWidget().updateAll()` directly again, but inside
+      `HealthWidgetApp.applicationScope` (a process-lifetime `CoroutineScope`, now
+      `internal` instead of `private`) rather than the screen's own scope. This keeps the
+      original problem fixed (the scope outlives the screen) while being as fast as the
+      original direct call (no `WorkManager` queueing). `setExpedited()` on the
+      `WorkManager` request was considered and rejected: it requires overriding
+      `getForegroundInfo()` (i.e. showing a system notification) on API < 31 or the app
+      crashes there, which is a non-starter for a purely cosmetic background refresh on an
+      app whose whole philosophy is minimal, unobtrusive notifications.
+    - Not yet re-confirmed on-device after this second fix — reinstalled, awaiting the
+      user's repeat of the "tap through several styles in a row" test.
   - The user-configurable widget refresh interval (1h/2h/4h, `WidgetRefreshInterval`) added
     earlier the same day was removed again: FR1 only requires "at least every 2 hours," and
     the setting wasn't earning its keep. `WidgetScheduler` is back to a hardcoded 2h.
@@ -107,11 +122,48 @@ Two follow-up passes after the initial build-out:
     `<layer-list>`/`<shape>` resources — `WidgetStyle.backgroundDrawableRes()` (in
     `TipWidget.kt`, now `internal`) is shared between the real widget and this preview so
     they can't drift apart.
+- **`feat:` notifications master switch, manual tip refresh, settings restructure
+  (2026-07-24, later still)** — by request:
+  - New `AppSettings.notificationsEnabled` (default `true`) is a true kill-switch, not just
+    "frequency = 0": `NudgeScheduler.apply()` and `SleepAlertWorker` both gate on it ahead of
+    the existing frequency/sleep-alert checks, so turning it back on restores whatever
+    cadence was already dialed in rather than losing it. New DataStore key
+    (`notifications_enabled`) + repository method + test.
+  - Frequency/Sleep alert/Quiet hours collapsed from three separate `SectionCard`s into one
+    **Notifications** card (`NotificationsSection`) with the master switch in its header row;
+    the sub-controls drop to a plain `SubsectionTitle` (no icon) instead of a full
+    `SectionTitle` each, and the whole card reduces to a one-line "off" hint when the switch
+    is off. Sections reordered: Notifications → Widget → current-tip card → About (functional
+    controls first, boilerplate last).
+  - "Why this tip?" gained a refresh `IconButton` (`Icons.Filled.Refresh`) that calls the
+    same `AdvanceTipUseCase` the periodic worker uses, then `TipWidget().updateAll()` via
+    `HealthWidgetApp.applicationScope` — picks a new tip out of turn and pushes it to the
+    home-screen widget immediately, same instant-update reasoning as the widget-style fix.
+  - About is now collapsed by default (tap the row to expand/collapse; a plain `if`, no
+    `AnimatedVisibility`, to avoid pulling in `androidx.compose.animation` on a fixed stack),
+    and its copy was rewritten from a "no X, no Y, no Z, not even W" listy paragraph to two
+    short clauses ("Everything stays on your phone — tips, settings, history. No account, no
+    tracking, no ads.").
+  - The four widget background drawables had drifted toward looking like the same template
+    recolored: Forest's end color was blue-gray (`#3A5F72`), landing in the same cool-blue
+    family as Ocean and Midnight, and all four used an identical 135° base-gradient angle.
+    Forest's palette is now genuinely green (`widget_gradient_start/end` renamed to
+    `widget_forest_start/end`, end color to a near-black forest green `#0B2E1F`, its "light"
+    accent from icy mint to warm dappled gold), and each theme got a distinct base angle
+    (Forest 135°, Ocean 90°, Sunset 225°, Midnight 315°) so they read as different scenes,
+    not just different color stops on the same template.
 
 ## Verified for real (not just reviewed)
 
-- `:core` — 38 unit tests pass (JVM, no Android needed) — includes two new
-  `TipCatalogTest` cases for the citation requirement.
+- The notifications-master-switch/tip-refresh/settings-restructure pass above is verified via
+  `compileDebugKotlin`, `testDebugUnitTest` (including a new `setNotificationsEnabled`
+  DataStore test), and `ktlintCheck` — all green, and the build has since been installed on
+  the device. **Not yet confirmed on-screen**: the collapsible About row, the Notifications
+  card's collapse-on-disable, the refresh-tip button's visible effect on the widget, and the
+  four re-angled/recolored backgrounds have only been checked as compiled resources, not as
+  rendered pixels — pending the user's next pass through the app.
+- `:core` — 37 unit tests pass (JVM, no Android needed) — includes a new `TipCatalogTest`
+  case for the citation requirement.
 - `:app` — 10 unit tests pass, debug and release variants.
 - `ktlintCheck`, `lint` (0 errors), full `build` including `assembleRelease` with R8
   minification — all green, after fixing the `Tip`-typed API in every test that still
@@ -121,13 +173,15 @@ Two follow-up passes after the initial build-out:
   Everything described in this file is **local and uncommitted as of this writing** — CI
   hasn't seen any of the settings-redesign/citation/anti-repeat-window work yet.
 - On-device: the widget-style picker bug (see above) was reproduced and confirmed exactly
-  as reported, then fixed and rebuilt. The fix itself has **not yet been re-verified
-  on-screen** — pending the phone reconnecting/re-authorizing over `adb` again. Before that
-  bug was found, this same build's settings screen (icons, trimmed text, Card sections,
-  live widget preview, style swatches, frequency slider to 6, the "100% offline" string)
-  was confirmed rendering correctly via `adb` screenshots, and the notification-permission
-  flow, WorkManager job scheduling, and settings persistence-through-reinstall all checked
-  out via `adb`/`dumpsys` in an earlier pass this session.
+  as reported (both the original "stuck after one change" version and the follow-up "lags,
+  doesn't change" regression from the first fix attempt). The current (second) fix is
+  installed on the device but **not yet re-verified on-screen** — see "In progress right
+  now." Before either bug was found, this same build's settings screen (icons, trimmed
+  text, Card sections, live widget preview, style swatches, frequency slider to 6, the
+  "100% offline" string) was confirmed rendering correctly via `adb` screenshots, and the
+  notification-permission flow, WorkManager job scheduling, and settings
+  persistence-through-reinstall all checked out via `adb`/`dumpsys` in an earlier pass this
+  session.
 
 ## Release readiness
 
@@ -153,24 +207,30 @@ Testing on a **physical Android device via USB** (the user's choice over emulato
 Android Studio / Firebase Test Lab, made explicitly) — a Samsung Galaxy A34 (`SM_A346E`),
 using a USB-A-to-C cable (not the USB-C-to-C the user would've preferred, but confirmed
 working fine — an early "is this a bad cable" theory turned out to be wrong; Windows showed
-a perfectly healthy, driver-bound ADB interface throughout). The device keeps needing
-re-authorization (`adb devices -l` shows `unauthorized`) each time the connection drops and
-comes back, which has happened a few times this session — that's normal for a "new" USB
-session from Android's perspective and just needs "Allow" tapped again on the phone each
-time, not a sign of a deeper problem.
+a perfectly healthy, driver-bound ADB interface throughout). The device has repeatedly
+dropped to `unauthorized` in `adb devices -l` over the course of this session and needed
+"Allow" tapped again on the phone each time — that's normal for a "new" USB session from
+Android's perspective, not a sign of a deeper problem, but expect to hit it again next time.
 
-Next step once reconnected/authorized: `adb install -r app/build/outputs/apk/debug/app-debug.apk`,
-relaunch `SettingsActivity`, and specifically re-verify the widget-style picker — tap through
-**multiple different styles in a row** without restarting the app (that's exactly the
-sequence that exposed the now-fixed bug), and confirm the home-screen widget's background
-actually updates each time, plus the new "Why this tip?" citation card.
+The build with the second (current) widget-refresh fix — `applicationScope` instead of
+`WorkManager` — has been installed on the device. **Awaiting the user's re-test**: tap
+through several different widget styles in a row without restarting the app (the exact
+sequence that exposed both the original stuck-session bug and the WorkManager-lag
+regression) and confirm the home-screen widget's background changes instantly each time,
+with no lag and no "only works once" behavior.
 
-One methodological note for next time: while both this session and the user were sending
-input to the same phone at once (adb `input tap` here, real touches from the user), the two
-interleaved and produced confusing, hard-to-interpret results (a style selection appeared to
-"jump back" to an earlier choice). Prefer read-only observation (screenshots, logcat,
-`dumpsys`) plus asking the user to perform the interaction, over sending synthetic input to a
-device the user is also actively holding.
+Two methodological notes for next time:
+- While both this session and the user were sending input to the same phone at once (adb
+  `input tap` here, real touches from the user), the two interleaved and produced confusing,
+  hard-to-interpret results (a style selection appeared to "jump back" to an earlier
+  choice). Prefer read-only observation (screenshots, logcat, `dumpsys`) plus asking the
+  user to perform the interaction, over sending synthetic input to a device the user is
+  also actively holding.
+- A fix that passes `ktlintCheck`/`test`/`lint`/`adb`-observed-once isn't necessarily the
+  final fix — the WorkManager-based widget-refresh fix looked completely correct and was
+  confirmed working via screenshots, but the user caught a UX regression (lag) that no
+  automated check here would have surfaced. Real user re-testing after "it's fixed" claims
+  matters even when the automated signals are all green.
 
 ## Local environment notes
 
