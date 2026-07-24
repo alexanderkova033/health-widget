@@ -1,4 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="ic_launcher_background">#1B5E4F</color>
+
+    <color name="widget_gradient_start">#1B5E4F</color>
+    <color name="widget_gradient_end">#3A5F72</color>
+
+    <color name="widget_ocean_start">#0D47A1</color>
+    <color name="widget_ocean_end">#26C6DA</color>
+
+    <color name="widget_sunset_start">#8E24AA</color>
+    <color name="widget_sunset_end">#FF7043</color>
+
+    <color name="widget_midnight_start">#0D1117</color>
+    <color name="widget_midnight_end">#2E2A5C</color>
 </resources>

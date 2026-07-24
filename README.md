@@ -13,8 +13,8 @@
 
 A privacy-first Android wellness app for students and desk workers. No accounts, no
 tracking, no dashboards, no streaks. Just a home-screen widget with one rotating,
-evidence-backed micro-tip, and a small number of scheduled notification nudges —
-including a late-night sleep alert.
+[evidence-backed](TIP_SOURCES.md) micro-tip, and a small number of scheduled notification
+nudges — including a late-night sleep alert.
 
 ## The privacy promise
 
@@ -27,13 +27,16 @@ in on-device DataStore only. See [PRIVACY.md](PRIVACY.md) for the plain-English 
 
 v1 is intentionally passive:
 
-- A Glance home-screen widget showing the current tip, refreshed at least every 2 hours,
-  plus on boot. Tapping it opens the settings screen.
-- 0-3 daily notification nudges (user-configurable), each a rotating micro-tip.
+- A Glance home-screen widget showing the current tip, refreshed at a user-configurable
+  interval (1h / 2h / 4h, default 2h) and on boot. Tapping it opens the settings screen.
+- Four selectable widget background styles (Forest, Ocean, Sunset, Midnight), previewed live
+  in Settings before picking one.
+- 0-6 daily notification nudges (user-configurable), each a rotating micro-tip.
 - One optional sleep alert at 23:00.
 - User-configurable quiet hours (default 23:30-07:00) during which nudges are silent — the
   sleep alert is exempt by design.
-- The same tip never repeats back-to-back, across the widget and notifications combined.
+- The same tip never repeats within the last 30 shown, across the widget and notifications
+  combined.
 
 Explicitly **not** in v1: accounts, streaks, gamification, history/progress views, or any
 form of tracking.
@@ -49,7 +52,10 @@ architecture) rather than on each other's concrete classes:
   - `tips/` — `TipEngine`, `TipCatalog`, `TipHistoryRepository` (interface), and
     `AdvanceTipUseCase`, the one "pick + persist the next tip" rule shared by the widget
     and both notification workers, so they can't silently diverge on anti-repeat (FR5).
-  - `settings/` — the `AppSettings` model and `SettingsRepository` interface.
+    `TipHistoryRepository` tracks the last `MAX_RECENT_TIPS` (30) tips shown, not just the
+    single previous one, and `TipEngine` excludes all of them when picking the next tip.
+  - `settings/` — the `AppSettings` model (notification frequency, sleep alert, quiet
+    hours, widget style, widget refresh interval) and `SettingsRepository` interface.
   - `scheduling/` — `QuietHours` and `durationUntilNext`.
   Everything here is trivially unit-testable and reusable as-is by a future iOS port.
 - **`:app`** — the Android application, organized by feature rather than by technical
@@ -139,7 +145,8 @@ Notable design decisions:
   unreliable 30-minute floor.
 - Tip content lives in bundled plain-text resources (`core/src/main/resources/tips/*.txt`),
   not a JSON asset, to avoid pulling a JSON dependency into a module whose whole point is
-  to stay dependency-free.
+  to stay dependency-free. Every non-obvious claim a tip makes is cited in
+  [TIP_SOURCES.md](TIP_SOURCES.md), organized by theme rather than by file.
 - There's no DI framework (`AppContainer` is a hand-written composition root) and no
   ViewModel (the single settings screen collects a `Flow` directly) — both are deliberately
   skipped as unnecessary weight for an app this size, not oversights.
@@ -170,7 +177,7 @@ CI (`.github/workflows/ci.yml`) runs all three plus a full build on every push a
 ## Roadmap
 
 - [ ] Widget size variants (small/medium) via Glance's responsive sizing.
-- [ ] Per-slot custom nudge times (v1 ships fixed default times per frequency level).
+- [ ] Per-slot custom nudge times (each frequency level 0-6 still ships fixed default times).
 - [ ] Localization beyond `en` (all strings are already externalized to `strings.xml`).
 - [ ] **iOS port** via WidgetKit + App Intents, sharing the same tip-selection and
       quiet-hours rules (the `:core` module's logic is plain enough to port directly).

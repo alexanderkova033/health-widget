@@ -3,6 +3,8 @@ package com.healthwidget.app.settings.data
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import com.google.common.truth.Truth.assertThat
 import com.healthwidget.core.settings.AppSettings
+import com.healthwidget.core.settings.WidgetRefreshInterval
+import com.healthwidget.core.settings.WidgetStyle
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.BeforeEach
@@ -39,15 +41,15 @@ class DataStoreSettingsRepositoryTest {
             repository.setNotificationFrequency(0)
             assertThat(repository.settings.first().notificationFrequency).isEqualTo(0)
 
-            repository.setNotificationFrequency(3)
-            assertThat(repository.settings.first().notificationFrequency).isEqualTo(3)
+            repository.setNotificationFrequency(6)
+            assertThat(repository.settings.first().notificationFrequency).isEqualTo(6)
         }
 
     @Test
     fun `setNotificationFrequency rejects out-of-range values`() =
         runTest {
             assertThrows<IllegalArgumentException> { repository.setNotificationFrequency(-1) }
-            assertThrows<IllegalArgumentException> { repository.setNotificationFrequency(4) }
+            assertThrows<IllegalArgumentException> { repository.setNotificationFrequency(7) }
         }
 
     @Test
@@ -67,5 +69,19 @@ class DataStoreSettingsRepositoryTest {
             val settings = repository.settings.first()
             assertThat(settings.quietHoursStart).isEqualTo(start)
             assertThat(settings.quietHoursEnd).isEqualTo(end)
+        }
+
+    @Test
+    fun `setWidgetStyle persists and is reflected in settings flow`() =
+        runTest {
+            repository.setWidgetStyle(WidgetStyle.MIDNIGHT)
+            assertThat(repository.settings.first().widgetStyle).isEqualTo(WidgetStyle.MIDNIGHT)
+        }
+
+    @Test
+    fun `setWidgetRefreshInterval persists and is reflected in settings flow`() =
+        runTest {
+            repository.setWidgetRefreshInterval(WidgetRefreshInterval.ONE_HOUR)
+            assertThat(repository.settings.first().widgetRefreshInterval).isEqualTo(WidgetRefreshInterval.ONE_HOUR)
         }
 }

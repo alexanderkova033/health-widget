@@ -19,4 +19,8 @@ interface SettingsRepository {
         start: LocalTime,
         end: LocalTime,
     )
+
+    suspend fun setWidgetStyle(style: WidgetStyle)
+
+    suspend fun setWidgetRefreshInterval(interval: WidgetRefreshInterval)
 }

@@ -93,6 +93,10 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
+    // Full icon set rather than material-icons-core: a handful of specific icons are used
+    // (Bedtime, Widgets, Palette...) that aren't guaranteed in the small core set. Release
+    // minification strips everything but the icons actually referenced.
+    implementation(libs.androidx.compose.material.icons.extended)
     debugImplementation(libs.androidx.compose.ui.tooling)
 
     // GlanceTheme itself lives in androidx.glance (transitively via glance-appwidget); the

@@ -10,12 +10,20 @@ import java.util.concurrent.TimeUnit
 
 class WidgetScheduler(private val context: Context) {
     /** Safe to call on every app start / boot: won't reset an already-running periodic timer. */
-    fun ensureScheduled() {
+    fun ensureScheduled(intervalMinutes: Long) = apply(intervalMinutes, ExistingPeriodicWorkPolicy.KEEP)
+
+    /** Applies a new [intervalMinutes] immediately, replacing any previously scheduled timer. */
+    fun rescheduleAll(intervalMinutes: Long) = apply(intervalMinutes, ExistingPeriodicWorkPolicy.UPDATE)
+
+    private fun apply(
+        intervalMinutes: Long,
+        policy: ExistingPeriodicWorkPolicy,
+    ) {
         val request =
-            PeriodicWorkRequestBuilder<WidgetRefreshWorker>(REFRESH_INTERVAL_HOURS, TimeUnit.HOURS)
+            PeriodicWorkRequestBuilder<WidgetRefreshWorker>(intervalMinutes, TimeUnit.MINUTES)
                 .build()
         WorkManager.getInstance(context)
-            .enqueueUniquePeriodicWork(PERIODIC_WORK_NAME, ExistingPeriodicWorkPolicy.KEEP, request)
+            .enqueueUniquePeriodicWork(PERIODIC_WORK_NAME, policy, request)
     }
 
     /** Forces an immediate refresh, e.g. right after boot so the widget isn't stale until
@@ -29,8 +37,5 @@ class WidgetScheduler(private val context: Context) {
     companion object {
         private const val PERIODIC_WORK_NAME = "widget_periodic_refresh"
         private const val IMMEDIATE_WORK_NAME = "widget_immediate_refresh"
-
-        // FR1: "at least every 2 hours" — 2h is the least-frequent interval that satisfies it.
-        private const val REFRESH_INTERVAL_HOURS = 2L
     }
 }

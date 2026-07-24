@@ -18,8 +18,8 @@ private class FixedIndexRandom(private val index: Int) : Random() {
 
 private val testCatalog =
     TipCatalog(
-        general = listOf("G1", "G2"),
-        morning = listOf("M1"),
+        general = listOf("G1", "G2", "G3", "G4"),
+        morning = listOf("M1", "M2"),
         afternoon = listOf("A1"),
         evening = listOf("E1"),
         sleepLate = "Sleep late fixed message",
@@ -55,14 +55,14 @@ class TipEngineTest {
     @Test
     fun `sleep late message is the fixed catalog message`() {
         val engine = TipEngine(testCatalog, FixedIndexRandom(0))
-        val message = engine.messageFor(LocalTime.of(23, 30), lastTip = null)
+        val message = engine.messageFor(LocalTime.of(23, 30), recentTips = emptyList())
         assertThat(message).isEqualTo(testCatalog.sleepLate)
     }
 
     @Test
     fun `sleep early-hours message is the fixed catalog message`() {
         val engine = TipEngine(testCatalog, FixedIndexRandom(0))
-        val message = engine.messageFor(LocalTime.of(2, 0), lastTip = null)
+        val message = engine.messageFor(LocalTime.of(2, 0), recentTips = emptyList())
         assertThat(message).isEqualTo(testCatalog.sleepEarlyHours)
     }
 
@@ -70,30 +70,42 @@ class TipEngineTest {
     fun `sleep messages are exempt from anti-repeat`() {
         val engine = TipEngine(testCatalog, FixedIndexRandom(0))
         val time = LocalTime.of(23, 30)
-        val first = engine.messageFor(time, lastTip = null)
-        val second = engine.messageFor(time, lastTip = first)
+        val first = engine.messageFor(time, recentTips = emptyList())
+        val second = engine.messageFor(time, recentTips = listOf(first))
         assertThat(second).isEqualTo(first)
         assertThat(second).isEqualTo(testCatalog.sleepLate)
     }
 
     @Test
-    fun `never repeats the last tip when the pool has multiple members`() {
+    fun `excludes every tip in recentTips, not just the most recent one`() {
+        val engine = TipEngine(testCatalog, Random.Default)
+        // Morning pool is G1-G4, M1-M2 (6 members); excluding all but M2 must deterministically
+        // return M2 regardless of the random source, proving the whole list is honored.
+        val recentTips = listOf("G1", "G2", "G3", "G4", "M1")
+        val tip = engine.messageFor(LocalTime.of(9, 0), recentTips)
+        assertThat(tip).isEqualTo("M2")
+    }
+
+    @Test
+    fun `never repeats a tip within a bounded recent window`() {
         val engine = TipEngine(testCatalog, Random(seed = 42))
-        var lastTip: String? = null
+        val windowSize = 4
+        val window = ArrayDeque<String>()
         repeat(200) {
-            val tip = engine.messageFor(LocalTime.of(9, 0), lastTip)
-            assertThat(tip).isNotEqualTo(lastTip)
-            lastTip = tip
+            val tip = engine.messageFor(LocalTime.of(9, 0), window.toList())
+            assertThat(window).doesNotContain(tip)
+            window.addLast(tip)
+            if (window.size > windowSize) window.removeFirst()
         }
     }
 
     @Test
-    fun `falls back to repeating the same tip when the pool has only one member`() {
+    fun `falls back to a repeat when recentTips covers the entire pool`() {
         val singleTipCatalog =
             testCatalog.copy(general = listOf("Only"), morning = emptyList())
         val engine = TipEngine(singleTipCatalog, FixedIndexRandom(0))
 
-        val tip = engine.messageFor(LocalTime.of(9, 0), lastTip = "Only")
+        val tip = engine.messageFor(LocalTime.of(9, 0), recentTips = listOf("Only"))
 
         assertThat(tip).isEqualTo("Only")
     }
@@ -104,8 +116,9 @@ class TipEngineTest {
     ) {
         val actual =
             expectedPool.indices
-                .map { index -> TipEngine(testCatalog, FixedIndexRandom(index)).messageFor(time, lastTip = null) }
-                .toSet()
+                .map { index ->
+                    TipEngine(testCatalog, FixedIndexRandom(index)).messageFor(time, recentTips = emptyList())
+                }.toSet()
         assertThat(actual).isEqualTo(expectedPool.toSet())
     }
 

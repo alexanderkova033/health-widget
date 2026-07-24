@@ -9,12 +9,12 @@ import org.junit.jupiter.api.Test
 import java.time.LocalTime
 import kotlin.random.Random
 
-private class FakeTipHistoryRepository(initial: String? = null) : TipHistoryRepository {
+private class FakeTipHistoryRepository(initial: List<String> = emptyList()) : TipHistoryRepository {
     private val state = MutableStateFlow(initial)
-    override val lastTip: Flow<String?> = state
+    override val recentTips: Flow<List<String>> = state
 
-    override suspend fun setLastTip(tip: String) {
-        state.value = tip
+    override suspend fun recordTip(tip: String) {
+        state.value = (state.value + tip).takeLast(TipHistoryRepository.MAX_RECENT_TIPS)
     }
 }
 
@@ -30,20 +30,20 @@ class AdvanceTipUseCaseTest {
         )
 
     @Test
-    fun `persists the picked tip so it becomes the next lastTip`() =
+    fun `persists the picked tip so it appears in recentTips`() =
         runTest {
             val repository = FakeTipHistoryRepository()
             val advanceTip = AdvanceTipUseCase(TipEngine(catalog, Random(seed = 1)), repository)
 
             val tip = advanceTip(LocalTime.of(9, 0))
 
-            assertThat(repository.lastTip.first()).isEqualTo(tip)
+            assertThat(repository.recentTips.first()).contains(tip)
         }
 
     @Test
-    fun `never repeats the previously persisted tip`() =
+    fun `never repeats a tip already in the recent history`() =
         runTest {
-            val repository = FakeTipHistoryRepository(initial = "G1")
+            val repository = FakeTipHistoryRepository(initial = listOf("G1"))
             val advanceTip = AdvanceTipUseCase(TipEngine(catalog, Random(seed = 2)), repository)
 
             val tip = advanceTip(LocalTime.of(9, 0))

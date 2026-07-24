@@ -12,25 +12,36 @@
     <string name="settings_title">HealthWidget</string>
 
     <string name="settings_frequency_title">Nudge frequency</string>
-    <string name="settings_frequency_description">How many gentle reminders would you like per day?</string>
     <string name="settings_frequency_off">Off</string>
-    <string name="settings_frequency_one">1 time a day</string>
-    <string name="settings_frequency_two">2 times a day</string>
-    <string name="settings_frequency_three">3 times a day</string>
+    <plurals name="settings_frequency_times">
+        <item quantity="one">%d time a day</item>
+        <item quantity="other">%d times a day</item>
+    </plurals>
 
     <string name="settings_sleep_alert_title">Sleep alert</string>
-    <string name="settings_sleep_alert_description">One reminder at 23:00 to consider winding down for bed.</string>
+    <string name="settings_sleep_alert_description">Wind-down reminder at 23:00.</string>
 
     <string name="settings_quiet_hours_title">Quiet hours</string>
-    <string name="settings_quiet_hours_description">No nudge notifications will be sent during this window. The sleep alert is exempt.</string>
+    <string name="settings_quiet_hours_description">Nudges pause here; the sleep alert isn\'t affected.</string>
     <string name="settings_quiet_hours_start">Starts</string>
     <string name="settings_quiet_hours_end">Ends</string>
 
     <string name="settings_notification_permission_rationale">Allow notifications so nudges and the sleep alert can actually appear.</string>
     <string name="settings_notification_permission_action">Allow</string>
 
+    <string name="settings_widget_title">Widget</string>
+    <string name="settings_widget_style_forest">Forest</string>
+    <string name="settings_widget_style_ocean">Ocean</string>
+    <string name="settings_widget_style_sunset">Sunset</string>
+    <string name="settings_widget_style_midnight">Midnight</string>
+    <string name="settings_widget_refresh_title">Refresh every</string>
+    <string name="settings_widget_refresh_1h">1h</string>
+    <string name="settings_widget_refresh_2h">2h</string>
+    <string name="settings_widget_refresh_4h">4h</string>
+    <string name="settings_widget_preview_tip">Stand up and stretch for a moment.</string>
+
     <string name="settings_about_title">About</string>
-    <string name="settings_about_privacy_promise">HealthWidget works 100%% offline. No accounts, no analytics, no ads, and nothing ever leaves your device — not even anonymized data. All settings and tip history stay in local storage only.</string>
+    <string name="settings_about_privacy_promise">HealthWidget works 100% offline. No accounts, no analytics, no ads, and nothing ever leaves your device — not even anonymized data. All settings and tip history stay in local storage only.</string>
 
     <string name="action_ok">OK</string>
     <string name="action_cancel">Cancel</string>

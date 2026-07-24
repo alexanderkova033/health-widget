@@ -24,7 +24,7 @@ class SleepAlertWorker(
         val settings = container.settingsRepository.settings.first()
 
         if (settings.sleepAlertEnabled) {
-            val message = container.tipEngine.messageFor(NudgeScheduler.SLEEP_ALERT_TIME, lastTip = null)
+            val message = container.tipEngine.messageFor(NudgeScheduler.SLEEP_ALERT_TIME, recentTips = emptyList())
             NotificationHelper.showSleepAlert(applicationContext, message)
 
             val request =

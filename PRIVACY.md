@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Last updated:** 2026-07-04
+**Last updated:** 2026-07-24
 
 HealthWidget is built around one rule: your data never leaves your device.
 
@@ -14,8 +14,10 @@ data, usage data, or analytics of any kind.
 The app stores a small amount of data **only on your device**, using Android's local
 DataStore mechanism:
 
-- Your notification frequency, sleep alert toggle, and quiet-hours settings.
-- The single most recently shown tip (so the same tip doesn't repeat back-to-back).
+- Your notification frequency, sleep alert toggle, quiet-hours, widget background style, and
+  widget refresh interval settings.
+- The most recently shown tips (up to the last 30), so the same one doesn't come up again
+  too soon.
 
 None of this is ever transmitted anywhere. There is no server for it to go to: the app has
 no network permission at all (it does not request `INTERNET`), so it is technically

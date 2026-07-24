@@ -30,7 +30,7 @@ class BootReceiver : BroadcastReceiver() {
                 val settings = container.settingsRepository.settings.first()
                 NudgeScheduler(appContext).ensureScheduled(settings)
                 WidgetScheduler(appContext).apply {
-                    ensureScheduled()
+                    ensureScheduled(settings.widgetRefreshInterval.minutes)
                     refreshNow()
                 }
             } finally {

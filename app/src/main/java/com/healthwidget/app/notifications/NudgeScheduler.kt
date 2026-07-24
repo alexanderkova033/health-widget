@@ -74,15 +74,33 @@ class NudgeScheduler(private val context: Context) {
         const val SLEEP_ALERT_WORK_NAME = "sleep_alert"
         val MAX_NUDGE_SLOTS = AppSettings.MAX_NOTIFICATION_FREQUENCY
 
-        // Product spec fixes frequency (0-3/day, FR2) but leaves exact times unspecified
-        // ("user-visible times"). v1 picks simple fixed slots instead of a time picker, to
-        // keep setup zero-friction; revisit if user feedback wants custom times.
+        // Product spec fixes frequency (originally 0-3/day, later raised to 0-6, FR2) but
+        // leaves exact times unspecified ("user-visible times"). v1 picks simple fixed slots
+        // per level instead of a per-slot time picker, to keep setup zero-friction.
         val NUDGE_TIMES_BY_FREQUENCY: Map<Int, List<LocalTime>> =
             mapOf(
                 0 to emptyList(),
                 1 to listOf(LocalTime.of(12, 0)),
                 2 to listOf(LocalTime.of(10, 0), LocalTime.of(16, 0)),
                 3 to listOf(LocalTime.of(10, 0), LocalTime.of(14, 0), LocalTime.of(18, 0)),
+                4 to listOf(LocalTime.of(9, 0), LocalTime.of(12, 0), LocalTime.of(15, 0), LocalTime.of(18, 0)),
+                5 to
+                    listOf(
+                        LocalTime.of(9, 0),
+                        LocalTime.of(11, 30),
+                        LocalTime.of(14, 0),
+                        LocalTime.of(16, 30),
+                        LocalTime.of(19, 0),
+                    ),
+                6 to
+                    listOf(
+                        LocalTime.of(9, 0),
+                        LocalTime.of(11, 0),
+                        LocalTime.of(13, 0),
+                        LocalTime.of(15, 0),
+                        LocalTime.of(17, 0),
+                        LocalTime.of(19, 0),
+                    ),
             )
 
         fun nudgeWorkName(slot: Int) = "nudge_slot_$slot"

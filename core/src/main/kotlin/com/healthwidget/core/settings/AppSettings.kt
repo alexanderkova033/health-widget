@@ -3,19 +3,24 @@ package com.healthwidget.core.settings
 import java.time.LocalTime
 
 /**
- * User-configurable settings (FR6): notification frequency, sleep alert toggle, and quiet
- * hours. A plain domain model — persistence is an implementation detail of whatever
- * [SettingsRepository] is backing it.
+ * User-configurable settings (FR6): notification frequency, sleep alert toggle, quiet hours,
+ * and widget appearance/refresh cadence. A plain domain model — persistence is an
+ * implementation detail of whatever [SettingsRepository] is backing it.
  */
 data class AppSettings(
     val notificationFrequency: Int,
     val sleepAlertEnabled: Boolean,
     val quietHoursStart: LocalTime,
     val quietHoursEnd: LocalTime,
+    val widgetStyle: WidgetStyle,
+    val widgetRefreshInterval: WidgetRefreshInterval,
 ) {
     companion object {
         const val MIN_NOTIFICATION_FREQUENCY = 0
-        const val MAX_NOTIFICATION_FREQUENCY = 3
+
+        // Bumped from the original 3/day cap by request — still fixed default times per
+        // level (see NudgeScheduler.NUDGE_TIMES_BY_FREQUENCY), not a full custom-time picker.
+        const val MAX_NOTIFICATION_FREQUENCY = 6
 
         val DEFAULT =
             AppSettings(
@@ -23,6 +28,8 @@ data class AppSettings(
                 sleepAlertEnabled = true,
                 quietHoursStart = LocalTime.of(23, 30),
                 quietHoursEnd = LocalTime.of(7, 0),
+                widgetStyle = WidgetStyle.FOREST,
+                widgetRefreshInterval = WidgetRefreshInterval.TWO_HOURS,
             )
     }
 }

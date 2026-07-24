@@ -23,30 +23,32 @@ class TipEngine(
         }
 
     /**
-     * [lastTip] is the most recently shown tip, across widget refreshes and notifications
-     * combined, so it can be excluded here to satisfy the no-back-to-back-repeats requirement.
+     * [recentTips] are the most recently shown tips, across widget refreshes and
+     * notifications combined, oldest first — excluded here so none of them repeats within
+     * that span (see [TipHistoryRepository.MAX_RECENT_TIPS]).
      */
     fun messageFor(
         time: LocalTime,
-        lastTip: String?,
+        recentTips: List<String>,
     ): String =
         when (dayPartFor(time)) {
             // Fixed, single-message reminders are not drawn from a rotating pool — there is
             // only ever one possible message for each — so they are exempt from anti-repeat.
             DayPart.SLEEP_LATE -> catalog.sleepLate
             DayPart.SLEEP_EARLY_HOURS -> catalog.sleepEarlyHours
-            DayPart.MORNING -> pick(catalog.general + catalog.morning, lastTip)
-            DayPart.AFTERNOON -> pick(catalog.general + catalog.afternoon, lastTip)
-            DayPart.EVENING -> pick(catalog.general + catalog.evening, lastTip)
+            DayPart.MORNING -> pick(catalog.general + catalog.morning, recentTips)
+            DayPart.AFTERNOON -> pick(catalog.general + catalog.afternoon, recentTips)
+            DayPart.EVENING -> pick(catalog.general + catalog.evening, recentTips)
         }
 
     private fun pick(
         pool: List<String>,
-        lastTip: String?,
+        recentTips: List<String>,
     ): String {
-        // If excluding lastTip empties the pool (e.g. a pool of size 1), fall back to the
-        // full pool rather than crashing — a single-tip pool necessarily repeats.
-        val candidates = pool.filter { it != lastTip }.ifEmpty { pool }
+        // If excluding every recent tip empties the pool (e.g. a small pool combined with a
+        // long history), fall back to the full pool rather than crashing — this necessarily
+        // repeats something, but only when there's truly no alternative left.
+        val candidates = pool.filterNot { it in recentTips }.ifEmpty { pool }
         return candidates[random.nextInt(candidates.size)]
     }
 }

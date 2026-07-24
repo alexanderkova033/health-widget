@@ -23,7 +23,7 @@ class HealthWidgetApp : Application() {
         applicationScope.launch {
             val settings = container.settingsRepository.settings.first()
             NudgeScheduler(this@HealthWidgetApp).ensureScheduled(settings)
-            WidgetScheduler(this@HealthWidgetApp).ensureScheduled()
+            WidgetScheduler(this@HealthWidgetApp).ensureScheduled(settings.widgetRefreshInterval.minutes)
         }
     }
 }
