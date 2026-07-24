@@ -1,12 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#1B5E4F</color>
+    <!-- Launcher icon background only (not the app's teal-green theme color): a single
+         flat olive-brown, brown-dominant with a gentle green undertone rather than a
+         gradient. Same hue/ratio as an earlier, darker pass of this color, just scaled
+         brighter — the darker version read as muddy rather than warm earth. -->
+    <color name="ic_launcher_background">#5A492A</color>
 
     <!-- Thin translucent edge drawn on top of every widget style's background, so the card
          reads as a distinct object against arbitrary home-screen wallpaper instead of a bare
          rectangle of color with no boundary. Same value across all styles for a consistent
          "frame" language. -->
     <color name="widget_card_border">#4DFFFFFF</color>
+
+    <!-- Shaded fill behind the settings gear icon (widget_settings_button_bg.xml) — a
+         neutral dark scrim reads against all four background styles alike, unlike a style-
+         matched tint would. Paired with widget_card_border for the same ring, so the button
+         reads as part of the same "frame" language as the card itself. -->
+    <color name="widget_settings_button_fill">#40000000</color>
 
     <!-- Deep emerald-to-near-black green (previously drifted into blue-gray, which read as
          generic rather than "forest" and blurred together with Ocean/Midnight's cool tones). -->
