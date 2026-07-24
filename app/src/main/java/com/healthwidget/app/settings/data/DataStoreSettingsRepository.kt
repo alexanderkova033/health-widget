@@ -4,8 +4,10 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
 import com.healthwidget.core.settings.AppSettings
 import com.healthwidget.core.settings.SettingsRepository
+import com.healthwidget.core.settings.VarietyLevel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -17,16 +19,28 @@ import kotlinx.coroutines.flow.map
 class DataStoreSettingsRepository(private val dataStore: DataStore<Preferences>) : SettingsRepository {
     override val settings: Flow<AppSettings> = dataStore.data.map { it.toAppSettings() }
 
-    override suspend fun setMoreVarietyEnabled(enabled: Boolean) {
-        dataStore.edit { it[Keys.MORE_VARIETY_ENABLED] = enabled }
+    override suspend fun setVarietyLevel(level: VarietyLevel) {
+        dataStore.edit { it[Keys.VARIETY_LEVEL] = level.name }
     }
 
+    /**
+     * Falls back to [Keys.LEGACY_MORE_VARIETY_ENABLED] — the boolean toggle this setting
+     * replaced — when [Keys.VARIETY_LEVEL] hasn't been written yet, so a preference set before
+     * this migration isn't silently reset to the default on upgrade.
+     */
     private fun Preferences.toAppSettings(): AppSettings =
         AppSettings(
-            moreVarietyEnabled = this[Keys.MORE_VARIETY_ENABLED] ?: AppSettings.DEFAULT.moreVarietyEnabled,
+            varietyLevel =
+                this[Keys.VARIETY_LEVEL]?.let { runCatching { VarietyLevel.valueOf(it) }.getOrNull() }
+                    ?: legacyVarietyLevel()
+                    ?: AppSettings.DEFAULT.varietyLevel,
         )
 
+    private fun Preferences.legacyVarietyLevel(): VarietyLevel? =
+        this[Keys.LEGACY_MORE_VARIETY_ENABLED]?.let { if (it) VarietyLevel.PLAYFUL else VarietyLevel.PRACTICAL }
+
     private object Keys {
-        val MORE_VARIETY_ENABLED = booleanPreferencesKey("more_variety_enabled")
+        val VARIETY_LEVEL = stringPreferencesKey("variety_level")
+        val LEGACY_MORE_VARIETY_ENABLED = booleanPreferencesKey("more_variety_enabled")
     }
 }

@@ -1,5 +1,6 @@
 package com.healthwidget.core.tips
 
+import com.healthwidget.core.settings.VarietyLevel
 import java.time.LocalTime
 import kotlin.random.Random
 
@@ -35,25 +36,25 @@ class TipEngine(
      * for the user to see it actually changed. A manual advance always draws from the general
      * pool instead, so tapping visibly does something regardless of time of day.
      *
-     * [moreVarietyEnabled] is the Settings "more variety" toggle — see [pick] for how it's
-     * applied. Defaults to `false` so every existing caller (and test) that doesn't know about
+     * [varietyLevel] is the Settings variety level — see [pick] for how it's applied. Defaults
+     * to [VarietyLevel.PRACTICAL] so every existing caller (and test) that doesn't know about
      * it yet keeps today's behavior exactly.
      */
     fun messageFor(
         time: LocalTime,
         recentTips: List<String>,
         manual: Boolean = false,
-        moreVarietyEnabled: Boolean = false,
+        varietyLevel: VarietyLevel = VarietyLevel.PRACTICAL,
     ): Tip {
         val tonePool = catalog.philosophical + catalog.lighthearted
         return when (dayPartFor(time)) {
             DayPart.SLEEP_LATE ->
-                if (manual) pick(catalog.general, tonePool, recentTips, moreVarietyEnabled) else catalog.sleepLate
+                if (manual) pick(catalog.general, tonePool, recentTips, varietyLevel) else catalog.sleepLate
             DayPart.SLEEP_EARLY_HOURS ->
-                if (manual) pick(catalog.general, tonePool, recentTips, moreVarietyEnabled) else catalog.sleepEarlyHours
-            DayPart.MORNING -> pick(catalog.general + catalog.morning, tonePool, recentTips, moreVarietyEnabled)
-            DayPart.AFTERNOON -> pick(catalog.general + catalog.afternoon, tonePool, recentTips, moreVarietyEnabled)
-            DayPart.EVENING -> pick(catalog.general + catalog.evening, tonePool, recentTips, moreVarietyEnabled)
+                if (manual) pick(catalog.general, tonePool, recentTips, varietyLevel) else catalog.sleepEarlyHours
+            DayPart.MORNING -> pick(catalog.general + catalog.morning, tonePool, recentTips, varietyLevel)
+            DayPart.AFTERNOON -> pick(catalog.general + catalog.afternoon, tonePool, recentTips, varietyLevel)
+            DayPart.EVENING -> pick(catalog.general + catalog.evening, tonePool, recentTips, varietyLevel)
         }
     }
 
@@ -71,43 +72,68 @@ class TipEngine(
         ).find { it.text == text }
 
     /**
-     * [moreVarietyEnabled] is a *lean*, not a filter: toggling it never removes either group
-     * entirely, it just flips which one is the overwhelming majority of the draw
-     * ([TONE_DOMINANT_CHANCE_PERCENT] vs [TONE_MINORITY_CHANCE_PERCENT]) — off still lets a
-     * philosophical/lighthearted tip through occasionally, on still leaves room for a practical
-     * one, so the toggle reads as "mostly this" rather than "only this." The group-vs-group
-     * coin flip only happens when [tonePool] actually has content — while it's empty (no
-     * philosophical/lighthearted tips written yet, see [TipCatalog.philosophical]), this always
-     * resolves to [practicalPool] with a single random draw, identical to before this toggle
-     * existed.
+     * [varietyLevel] is a *lean*, not a filter: it never removes either group entirely, it just
+     * shifts which one is favored in the draw ([VarietyLevel.toneChancePercent]) —
+     * [VarietyLevel.PRACTICAL] still lets a philosophical/lighthearted tip through
+     * occasionally, [VarietyLevel.PLAYFUL] still leaves room for a practical one, so every
+     * level reads as "mostly this" rather than "only this."
+     *
+     * Anti-repeat is applied to *both* pools before the weighted choice, not after choosing one
+     * — doing it the other way round (weight first, filter second) let the coin flip land on a
+     * group whose only unseen tips had all just been shown, and repeat one of those while the
+     * other group still had fresh options sitting right there unused. Only once *neither* pool
+     * has anything unseen left does this fall back to the weighted full pools, which
+     * necessarily repeats something.
      */
     private fun pick(
         practicalPool: List<Tip>,
         tonePool: List<Tip>,
         recentTips: List<String>,
-        moreVarietyEnabled: Boolean,
+        varietyLevel: VarietyLevel,
     ): Tip {
-        val pool = selectGroup(practicalPool, tonePool, moreVarietyEnabled)
-        // If excluding every recent tip empties the pool (e.g. a small pool combined with a
-        // long history), fall back to the full pool rather than crashing — this necessarily
-        // repeats something, but only when there's truly no alternative left.
-        val candidates = pool.filterNot { it.text in recentTips }.ifEmpty { pool }
+        val freshPractical = practicalPool.filterNot { it.text in recentTips }
+        val freshTone = tonePool.filterNot { it.text in recentTips }
+        val candidates =
+            when {
+                freshPractical.isEmpty() && freshTone.isEmpty() ->
+                    selectGroup(practicalPool, tonePool, varietyLevel)
+                freshTone.isEmpty() -> freshPractical
+                freshPractical.isEmpty() -> freshTone
+                else -> selectGroup(freshPractical, freshTone, varietyLevel)
+            }
         return candidates[random.nextInt(candidates.size)]
     }
 
+    /**
+     * The group-vs-group coin flip only happens when both pools actually have content to choose
+     * between — while [tonePool] is empty (no philosophical/lighthearted tips written yet, see
+     * [TipCatalog.philosophical]), this always resolves to [practicalPool] with a single random
+     * draw, identical to before the variety setting existed.
+     */
     private fun selectGroup(
         practicalPool: List<Tip>,
         tonePool: List<Tip>,
-        moreVarietyEnabled: Boolean,
+        varietyLevel: VarietyLevel,
     ): List<Tip> {
         if (tonePool.isEmpty()) return practicalPool
         if (practicalPool.isEmpty()) return tonePool
-        val toneChancePercent = if (moreVarietyEnabled) TONE_DOMINANT_CHANCE_PERCENT else TONE_MINORITY_CHANCE_PERCENT
-        return if (random.nextInt(100) < toneChancePercent) tonePool else practicalPool
+        return if (random.nextInt(100) < varietyLevel.toneChancePercent) tonePool else practicalPool
     }
+
+    /** The tone pool's odds of winning the [selectGroup] coin flip. [VarietyLevel.BALANCED]
+     * sits at an even split; [VarietyLevel.PRACTICAL] and [VarietyLevel.PLAYFUL] keep the same
+     * dominant/minority split the setting shipped with before it had a middle option. */
+    private val VarietyLevel.toneChancePercent: Int
+        get() =
+            when (this) {
+                VarietyLevel.PRACTICAL -> TONE_MINORITY_CHANCE_PERCENT
+                VarietyLevel.BALANCED -> TONE_BALANCED_CHANCE_PERCENT
+                VarietyLevel.PLAYFUL -> TONE_DOMINANT_CHANCE_PERCENT
+            }
 
     private companion object {
         const val TONE_DOMINANT_CHANCE_PERCENT = 80
+        const val TONE_BALANCED_CHANCE_PERCENT = 50
         const val TONE_MINORITY_CHANCE_PERCENT = 20
     }
 }

@@ -1,6 +1,7 @@
 package com.healthwidget.core.tips
 
 import com.google.common.truth.Truth.assertThat
+import com.healthwidget.core.settings.VarietyLevel
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.Flow
@@ -38,8 +39,8 @@ private class RaceProneTipHistoryRepository(initial: List<String> = emptyList())
 /** Returns 50 for the group-selection roll ([TipEngine]'s `nextInt(100)`) and 0 for every other
  * call (e.g. the subsequent candidate-index pick) — 50 sits strictly between the dominant (80)
  * and minority (20) tone-chance thresholds, so it deterministically reveals which one the
- * engine actually used, rather than needing a statistical test to prove `moreVarietyEnabled`
- * reached [TipEngine.messageFor] from [AdvanceTipUseCase.invoke] at all. */
+ * engine actually used, rather than needing a statistical test to prove `varietyLevel` reached
+ * [TipEngine.messageFor] from [AdvanceTipUseCase.invoke] at all. */
 private class GroupChoiceRandom : Random() {
     override fun nextBits(bitCount: Int): Int = 0
 
@@ -104,17 +105,17 @@ class AdvanceTipUseCaseTest {
         }
 
     @Test
-    fun `moreVarietyEnabled is forwarded to the engine's weighting`() =
+    fun `varietyLevel is forwarded to the engine's weighting`() =
         runTest {
             val mixedCatalog = catalog.copy(philosophical = listOf(tip("Tone tip")))
             val repository = FakeTipHistoryRepository()
             val advanceTip = AdvanceTipUseCase(TipEngine(mixedCatalog, GroupChoiceRandom()), repository)
 
-            val tip = advanceTip(LocalTime.of(9, 0), moreVarietyEnabled = true)
+            val tip = advanceTip(LocalTime.of(9, 0), varietyLevel = VarietyLevel.PLAYFUL)
 
             // GroupChoiceRandom's fixed 50 falls under the 80% dominant threshold but not the
-            // 20% minority one — only a `true` that actually reached the engine picks the tone
-            // pool here; a dropped/defaulted-false flag would have produced G1, G2, or M1.
+            // 20% minority one — only a PLAYFUL that actually reached the engine picks the tone
+            // pool here; a dropped/defaulted-PRACTICAL level would have produced G1, G2, or M1.
             assertThat(tip.text).isEqualTo("Tone tip")
         }
 

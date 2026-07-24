@@ -1,5 +1,6 @@
 package com.healthwidget.core.tips
 
+import com.healthwidget.core.settings.VarietyLevel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -28,17 +29,17 @@ class AdvanceTipUseCase(
     private val mutex = Mutex()
 
     /** [manual] should be `true` for an explicit user request for a new tip (widget tap,
-     * Settings refresh button) and left `false` for the passive scheduled rotation; [moreVarietyEnabled]
-     * is the Settings toggle, passed straight through — see [TipEngine.messageFor] for what
-     * both actually do. */
+     * Settings refresh button) and left `false` for the passive scheduled rotation; [varietyLevel]
+     * is the Settings variety level, passed straight through — see [TipEngine.messageFor] for
+     * what both actually do. */
     suspend operator fun invoke(
         now: LocalTime,
         manual: Boolean = false,
-        moreVarietyEnabled: Boolean = false,
+        varietyLevel: VarietyLevel = VarietyLevel.PRACTICAL,
     ): Tip =
         mutex.withLock {
             val recentTips = tipHistoryRepository.recentTips.first()
-            val tip = tipEngine.messageFor(now, recentTips, manual, moreVarietyEnabled)
+            val tip = tipEngine.messageFor(now, recentTips, manual, varietyLevel)
             tipHistoryRepository.recordTip(tip.text)
             tip
         }

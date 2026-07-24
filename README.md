@@ -55,21 +55,22 @@ architecture) rather than on each other's concrete classes:
     than just the single previous one, and `TipEngine` excludes all of them when picking the
     next tip. `TipEngine.findByText` resolves a persisted tip's text back to its full `Tip`
     (citation included) for the settings screen to display.
-  - `settings/` — just `WidgetStyle`, the four background styles and `WidgetStyle.forTip`,
-    the pure hash-based mapping from a tip's text to one of them. Not backed by a repository
-    any more — there's no user preference left to persist, so nothing here is stored.
+  - `settings/` — `WidgetStyle` (the four background styles, `WidgetStyle.forTip`'s pure
+    hash-based mapping from a tip's text to one of them — not user-configurable, not backed by
+    a repository) alongside `AppSettings`/`SettingsRepository`, which *is* a real persisted
+    preference again: a `VarietyLevel` (`PRACTICAL`/`BALANCED`/`PLAYFUL`), read by `TipEngine`'s
+    weighting (see "Notable design decisions" below).
   - `scheduling/` — `TipRefreshSchedule` (`shouldAdvanceTip`, the tick-threshold math behind
     the ~90-minutes-of-screen-on-time tip advance) and `WidgetRefreshRepository` (interface),
     the persisted screen-on tick counter (see "Notable design decisions" below).
   Everything here is trivially unit-testable and reusable as-is by a future iOS port.
 - **`:app`** — the Android application, organized by feature rather than by technical
-  layer (`settings/`, `tips/`, `widget/`, `boot/`). `tips/` and `widget/` each have a `data/`
-  sub-package with the DataStore-backed implementation of the matching `:core` interface
-  (`DataStoreTipHistoryRepository`, `DataStoreWidgetRefreshRepository`) — dependents (workers,
-  `AppContainer`, the settings screen) hold the `:core` interface type, never the concrete
-  DataStore class, per the Dependency Inversion Principle. `settings/` has no `data/`
-  sub-package: `presentation/` (`SettingsActivity`, `SettingsScreen`) is all there is, since
-  there's no setting left to persist.
+  layer (`settings/`, `tips/`, `widget/`, `boot/`). `settings/`, `tips/`, and `widget/` each
+  have a `data/` sub-package with the DataStore-backed implementation of the matching
+  `:core` interface (`DataStoreSettingsRepository`, `DataStoreTipHistoryRepository`,
+  `DataStoreWidgetRefreshRepository`) — dependents (workers, `AppContainer`, the settings
+  screen) hold the `:core` interface type, never the concrete DataStore class, per the
+  Dependency Inversion Principle.
 
 ```mermaid
 graph TD
@@ -83,6 +84,8 @@ graph TD
         end
         subgraph coreSettings["settings"]
             WidgetStyle["WidgetStyle (forTip)"]
+            AppSettings
+            SettingsRepository["SettingsRepository (interface)"]
         end
         subgraph coreScheduling["scheduling"]
             TipRefreshSchedule["shouldAdvanceTip"]
@@ -92,6 +95,7 @@ graph TD
 
     subgraph app["app (Android — organized by feature, not by layer)"]
         subgraph settingsFeature["settings"]
+            DataStoreSettingsRepository["data/DataStoreSettingsRepository"]
             SettingsActivity["presentation/SettingsActivity"]
             SettingsScreen["presentation/SettingsScreen"]
         end
@@ -112,8 +116,10 @@ graph TD
 
     DataStoreTipHistoryRepository -.implements.-> TipHistoryRepository
     DataStoreWidgetRefreshRepository -.implements.-> WidgetRefreshRepository
+    DataStoreSettingsRepository -.implements.-> SettingsRepository
     DataStoreTipHistoryRepository --> DataStore
     DataStoreWidgetRefreshRepository --> DataStore
+    DataStoreSettingsRepository --> DataStore
     TipCatalog --> Tip
     TipEngine --> TipCatalog
     AdvanceTipUseCase --> TipEngine
@@ -121,15 +127,18 @@ graph TD
 
     SettingsScreen --> TipHistoryRepository
     SettingsScreen --> TipEngine
+    SettingsScreen --> SettingsRepository
     SettingsScreen --> AppContainer
 
     WidgetRefreshWorker --> AdvanceTipUseCase
     WidgetRefreshWorker --> TipRefreshSchedule
     WidgetRefreshWorker --> WidgetRefreshRepository
+    WidgetRefreshWorker --> SettingsRepository
     WidgetRefreshWorker --> AppContainer
     RefreshTipAction --> AppContainer
     TipWidget --> AdvanceTipUseCase
     TipWidget --> TipHistoryRepository
+    TipWidget --> SettingsRepository
     TipWidget --> WidgetStyle
     AppContainer --> TipWidget
 
@@ -183,6 +192,18 @@ Notable design decisions:
   the background too) regardless of time of day. The passive worker-driven rotation is
   untouched (`manual` defaults to `false`), so the wind-down message still shows normally
   when nobody asked for anything.
+- **The "more variety" setting is a lean, not a filter.** `TipEngine.pick` chooses between the
+  practical pool and a "tone" pool (`philosophical + lighthearted`, both empty until that
+  content is written) with a weighted coin flip whose odds depend on `VarietyLevel`
+  (`PRACTICAL` 20% tone / `BALANCED` 50% / `PLAYFUL` 80%), rather than switching the tone pool
+  on or off outright — even `PRACTICAL` still lets one through occasionally, even `PLAYFUL`
+  still leaves room for a practical one. Anti-repeat is applied to *both* pools before that
+  weighted choice, not after: choosing the group first and filtering second let the coin flip
+  land on a group whose only unseen tips had already just been shown, forcing a repeat while
+  the other group still had fresh options sitting unused — fixed by filtering both pools
+  first, only falling back to the weighted full pools (which does repeat something) once
+  neither has anything unseen left. See `TipEngineTest`'s per-level share and
+  fresh-tip-preference cases.
 - The Glance widget's `updatePeriodMillis` is set to `0`; refresh is driven entirely by
   `WidgetScheduler`'s own 15-minute WorkManager periodic job (see the tip-advance tick model
   above), since the AppWidget framework's own update period has an unreliable 30-minute floor.
@@ -242,10 +263,19 @@ CI (`.github/workflows/ci.yml`) runs all three plus a full build on every push a
       lifting mood — a new tone alongside the practical wellness tips, not a replacement for
       them.
 - [ ] Lighter, mood-lifting content in the same spirit — a bit of gentle humor or warmth
-      mixed in, not just earnest advice. Note: `TipCatalogTest` currently enforces a real
-      external citation for every tip; a joke or a light line has no research claim to cite,
-      so this needs a decision on how citation applies to this pool before it ships (e.g. an
-      explicit "no citation needed" category, rather than quietly weakening the existing rule).
+      mixed in, not just earnest advice. `TipCatalogTest` currently enforces a real external
+      citation for every tip, which fits evidence-backed health tips but not an original joke
+      or a philosophical reflection with no research claim behind it. Introduce a `TipKind` (or
+      similar) alongside this content — evidence-based / reflection / quotation / lighthearted —
+      so each is presented honestly instead of forcing everything through one citation model
+      that only really fits the first kind. Do this as part of writing the content, not before
+      it: the model and the tips it needs to describe are one piece of work.
+- [ ] Sleep-hours messages (`sleepLate`/`sleepEarlyHours`) are currently one fixed `Tip` each,
+      deliberately exempt from anti-repeat. Worth reconsidering alongside the content above:
+      small pools instead of a single fixed message, still respecting anti-repeat and the
+      "more variety" weighting like every other day part, so night stops being the one
+      unpersonalized corner of the app. Bundle with the content pass above rather than doing
+      it alone.
 - [ ] More tips in the existing pools (general/morning/afternoon/evening).
 - [ ] More background styles beyond the current four (Forest/Ocean/Sunset/Midnight).
 - [ ] Remove em dashes from all app-facing text — bundled tip content included, not just
@@ -256,6 +286,16 @@ CI (`.github/workflows/ci.yml`) runs all three plus a full build on every push a
       merge or differentiate them so the rotation reads as more varied than it currently is.
 - [ ] Widget size variants (small/medium) via Glance's responsive sizing.
 - [ ] Localization beyond `en` (all strings are already externalized to `strings.xml`).
+- [ ] Low priority, no urgency either way:
+      - Reconsider the "More variety" section title now that it's a three-way `VarietyLevel`
+        picker (Practical/Balanced/Playful) rather than an on/off toggle — the original naming
+        concern was about a binary switch reading as "only this," which the three labeled
+        levels plus the state description under them already resolve most of. Bikeshed, not a
+        fix.
+      - Tighten the iOS-port claim below ("plain enough to port directly" slightly overstates
+        it) — `TipCatalog.loadDefault()` uses `Class.getResourceAsStream`, a real JVM-only API,
+        so a Kotlin Multiplatform port would need an expect/actual around resource loading at
+        minimum, not just a recompile.
 - [ ] **iOS port** via WidgetKit + App Intents, sharing the same tip-selection rules (the
       `:core` module's logic is plain enough to port directly).
 

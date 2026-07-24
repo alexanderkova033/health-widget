@@ -8,14 +8,23 @@
     <string name="settings_title">@string/app_name</string>
 
     <string name="settings_variety_title">More variety</string>
-    <string name="settings_variety_description">Leans the mix toward motivational and lighthearted tips instead of just practical ones — never only one or the other, just which one shows up more.</string>
+    <string name="settings_variety_label_practical">Practical</string>
+    <string name="settings_variety_label_balanced">Balanced</string>
+    <string name="settings_variety_label_playful">Playful</string>
+    <string name="settings_variety_state_practical">Mostly practical</string>
+    <string name="settings_variety_state_balanced">A mix of practical, motivational, and lighthearted</string>
+    <string name="settings_variety_state_playful">Mostly motivational &amp; lighthearted</string>
 
-    <string name="settings_tip_source_title">Why this tip?</string>
     <string name="settings_tip_source_quote">“%1$s”</string>
-    <string name="settings_tip_source_action">Read the source</string>
-    <string name="settings_tip_source_hint">Opens in your browser</string>
     <string name="settings_tip_refresh_action">Get a different tip</string>
 
+    <string name="settings_daypart_morning">Morning</string>
+    <string name="settings_daypart_afternoon">Afternoon</string>
+    <string name="settings_daypart_evening">Evening</string>
+    <string name="settings_daypart_night">Night</string>
+
     <string name="settings_about_title">About</string>
-    <string name="settings_about_privacy_promise">Your tips and history stay on this phone. No account, no tracking, no ads.</string>
+    <string name="settings_about_privacy_local">Tips and history stay on this phone</string>
+    <string name="settings_about_privacy_account">No account</string>
+    <string name="settings_about_privacy_ads">No tracking or ads</string>
 </resources>

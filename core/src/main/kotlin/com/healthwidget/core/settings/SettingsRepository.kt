@@ -10,5 +10,5 @@ import kotlinx.coroutines.flow.Flow
 interface SettingsRepository {
     val settings: Flow<AppSettings>
 
-    suspend fun setMoreVarietyEnabled(enabled: Boolean)
+    suspend fun setVarietyLevel(level: VarietyLevel)
 }

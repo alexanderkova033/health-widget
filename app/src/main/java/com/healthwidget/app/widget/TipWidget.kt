@@ -2,13 +2,7 @@ package com.healthwidget.app.widget
 
 import android.content.Context
 import android.content.Intent
-import android.graphics.Typeface
-import android.text.StaticLayout
-import android.text.TextPaint
-import android.util.DisplayMetrics
-import android.util.TypedValue
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -18,10 +12,8 @@ import androidx.glance.GlanceTheme
 import androidx.glance.Image
 import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
-import androidx.glance.LocalSize
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
-import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.cornerRadius
@@ -62,12 +54,6 @@ import java.time.LocalTime
  * holds across both surfaces.
  */
 class TipWidget : GlanceAppWidget() {
-    // Exact (rather than the default Single, which always reports the min size declared in
-    // tip_widget_info.xml) so LocalSize.current reflects whatever size the user actually
-    // resized this instance to — needed to shrink the tip's font to fit narrow placements
-    // instead of clipping it, see fittingTipFontSizeSp below.
-    override val sizeMode = SizeMode.Exact
-
     override suspend fun provideGlance(
         context: Context,
         id: GlanceId,
@@ -76,8 +62,8 @@ class TipWidget : GlanceAppWidget() {
         val existingTip = container.tipHistoryRepository.recentTips.first().lastOrNull()
         val tip =
             existingTip ?: run {
-                val moreVarietyEnabled = container.settingsRepository.settings.first().moreVarietyEnabled
-                container.advanceTip(LocalTime.now(), moreVarietyEnabled = moreVarietyEnabled).text
+                val varietyLevel = container.settingsRepository.settings.first().varietyLevel
+                container.advanceTip(LocalTime.now(), varietyLevel = varietyLevel).text
             }
         val style = WidgetStyle.forTip(tip)
 
@@ -97,59 +83,17 @@ private fun WidgetStyle.backgroundDrawableRes(): Int =
         WidgetStyle.MIDNIGHT -> R.drawable.widget_background_midnight
     }
 
-private const val TIP_FONT_MAX_SP = 20f
-
-// A fixed floor of a few discrete steps could still be too big to fit the longest tips on the
-// narrowest widget placements (that's exactly what produced the "…" truncation this replaces:
-// the previous smallest step, 13sp, still didn't always fit) — 8sp is small enough that even
-// the catalog's longest tip (~98 characters) wraps within maxLines at the widget's declared
-// minimum width, so the binary search below always has a floor that actually fits.
-private const val TIP_FONT_MIN_SP = 8f
-
-/**
- * TextView's real auto-size setters (`setAutoSizeTextTypeWithDefaults` etc.) aren't annotated
- * `@RemotableViewMethod`, so RemoteViews/Glance widgets can't use live auto-sizing text — this
- * is the manual substitute: binary-search (rather than stepping through a few fixed sizes, which
- * either wastes space or still overflows depending on where the tip's actual length falls
- * between steps) the largest size between [TIP_FONT_MIN_SP] and [TIP_FONT_MAX_SP] that still
- * wraps the tip within [maxLines] at [availableWidthPx], measured with [StaticLayout] — the same
- * line-breaking engine a real TextView uses — so the size scales continuously with how long the
- * tip actually is. The paint's typeface is pinned to [Typeface.SERIF] to match the tip [Text]'s
- * own `FontFamily.Serif` below — serif glyphs measure a little wider than the default sans face,
- * so measuring with the wrong typeface here would let a line wrap that the actual rendered font
- * doesn't.
- */
-private fun fittingTipFontSizeSp(
-    tip: String,
-    availableWidthPx: Int,
-    maxLines: Int,
-    metrics: DisplayMetrics,
-): Float {
-    if (availableWidthPx <= 0) return TIP_FONT_MIN_SP
-    val paint =
-        TextPaint().apply {
-            isFakeBoldText = true
-            typeface = Typeface.SERIF
-        }
-    fun fitsAt(sp: Float): Boolean {
-        paint.textSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, sp, metrics)
-        val lineCount =
-            StaticLayout.Builder
-                .obtain(tip, 0, tip.length, paint, availableWidthPx)
-                .build()
-                .lineCount
-        return lineCount <= maxLines
-    }
-    if (fitsAt(TIP_FONT_MAX_SP)) return TIP_FONT_MAX_SP
-    if (!fitsAt(TIP_FONT_MIN_SP)) return TIP_FONT_MIN_SP
-    var lo = TIP_FONT_MIN_SP
-    var hi = TIP_FONT_MAX_SP
-    repeat(6) {
-        val mid = (lo + hi) / 2f
-        if (fitsAt(mid)) lo = mid else hi = mid
-    }
-    return lo
-}
+// A single fixed size, rather than measuring each tip and picking a size to match, was a
+// deliberate simplification (by request) after the measure-and-fit approach turned out to be
+// unreliable in practice: it predicts wrapping with a StaticLayout measurement against
+// LocalSize.current, but that's only ever an estimate of the width the real RemoteViews
+// TextView gets on the actual home screen, and the two can disagree (different launchers, grid
+// rounding). When they did, the picked size was wrong in both directions — too large for long
+// tips (clipped past maxLines, unreadable without opening Settings) and too small for short
+// ones (wrapped into far more lines than the text needed, one word per line). A fixed size
+// removes the prediction entirely: real text wrapping already makes short tips use fewer lines
+// and long tips use more, with no measurement to drift out of sync with reality.
+private val TIP_FONT_SIZE = 15.sp
 
 @Composable
 private fun TipWidgetContent(
@@ -160,17 +104,6 @@ private fun TipWidgetContent(
     // version of glance-appwidget's actionStartActivity only takes an Intent, there's no
     // reified actionStartActivity<Activity>() convenience overload.
     val context = LocalContext.current
-
-    // Root padding (20dp * 2) + the tip chip's own padding (14dp * 2) below, subtracted from
-    // the widget's real current width (see TipWidget.sizeMode) to get the width the tip text
-    // actually has to wrap within.
-    val size = LocalSize.current
-    val tipFontSizeSp =
-        remember(tip, size) {
-            val metrics = context.resources.displayMetrics
-            val availableWidthPx = ((size.width.value - 68f) * metrics.density).toInt()
-            fittingTipFontSizeSp(tip, availableWidthPx, maxLines = 6, metrics = metrics)
-        }
 
     // Styled like a quote-card widget (à la the "Motivation" app): a fixed brand gradient
     // with bold centered text, rather than following GlanceTheme's day/night surface colors
@@ -184,7 +117,7 @@ private fun TipWidgetContent(
                 // Whole-card tap: refreshes the tip in place. The settings icon below has its
                 // own clickable modifier, which takes the tap over this one within its bounds.
                 .clickable(actionRunCallback<RefreshTipAction>())
-                .padding(horizontal = 20.dp, vertical = 16.dp),
+                .padding(horizontal = 12.dp, vertical = 16.dp),
         contentAlignment = Alignment.Center,
     ) {
         // The settings button used to sit in its own header Row above this Column, which
@@ -224,14 +157,14 @@ private fun TipWidgetContent(
                             GlanceModifier
                                 .background(ColorProvider(Color.Black.copy(alpha = 0.22f)))
                                 .cornerRadius(14.dp)
-                                .padding(horizontal = 14.dp, vertical = 6.dp),
+                                .padding(horizontal = 8.dp, vertical = 6.dp),
                     ) {
                         Text(
                             text = tip,
                             maxLines = 6,
                             style =
                                 TextStyle(
-                                    fontSize = tipFontSizeSp.sp,
+                                    fontSize = TIP_FONT_SIZE,
                                     fontWeight = FontWeight.Bold,
                                     fontFamily = FontFamily.Serif,
                                     textAlign = TextAlign.Center,
@@ -258,7 +191,7 @@ private fun TipWidgetContent(
         }
 
         // Corner overlay, stacked on top of the content above rather than occupying a row of
-        // its own: same visual spot as before (inset by the root Box's own 20dp/16dp padding),
+        // its own: same visual spot as before (inset by the root Box's own 12dp/16dp padding),
         // but it no longer costs the quote+tip block any of the card's vertical space.
         Box(
             modifier = GlanceModifier.fillMaxSize(),

@@ -24,8 +24,8 @@ class RefreshTipAction : ActionCallback {
         parameters: ActionParameters,
     ) {
         val container = (context.applicationContext as HealthWidgetApp).container
-        val moreVarietyEnabled = container.settingsRepository.settings.first().moreVarietyEnabled
-        container.advanceTip(LocalTime.now(), manual = true, moreVarietyEnabled = moreVarietyEnabled)
+        val varietyLevel = container.settingsRepository.settings.first().varietyLevel
+        container.advanceTip(LocalTime.now(), manual = true, varietyLevel = varietyLevel)
         container.refreshWidget()
     }
 }
